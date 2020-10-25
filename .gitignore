@@ -1,3 +1,9 @@
+# custom
+.dev/
+.data/
+*.swp
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
