@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 
-from . import file_util
-from . import peak_cluster_info
-from . import peak_detection
-from . import peak_info
+from . import util
+from . import json_io
+#from . import peak_cluster_info
+#from . import peak_detection
+#from . import peak_info
+
+# method libraries
+from . import registry
+from . import cluster_metric
+from . import normalize_1d
+
+from . import raman_spectra
