@@ -41,6 +41,14 @@ def get_args():
 	ap.add_argument("--dpi", type = pylib.util.PosInt, default = 300,
 		metavar = "int",
 		help = "output image resolution (default: 300)")
+	ap.add_argument("--with-hypothetical-noise-flag", action = "store_true",
+		help = "mark hypothetical noise flag in both tsv and plot outputs; "
+			"enabling this feature assumes the input data is generated with "
+			"--mark-hypothetical-noise-flag enabled and each spectra is "
+			"marked if being noise individually "
+			"(see script make_dataset_from_labspec_txt.py); if not, all "
+			"spectra missing this hypothetical noise information "
+			"are assumed to be non-noise spctra (default: no)")
 
 	# refine args
 	args = ap.parse_args()
@@ -200,7 +208,7 @@ class OneWayHCAWithPlot(object):
 		return lines
 
 
-def create_layout():
+def create_layout(add_noise_bar = False):
 	lc = mpllayout.LayoutCreator(
 		left_margin		= 0.2,
 		right_margin	= 0.2,
@@ -240,13 +248,15 @@ def create_layout():
 		ref_anchor = "bottomright", offsets = (axes_gap / 2, 0))
 	group_bar.set_size(group_bar_width, heatmap_size)
 
-	noise_bar = lc.add_frame("noise_bar")
-	noise_bar.set_anchor("bottomleft", ref_frame = group_bar,
-		ref_anchor = "bottomright", offsets = (axes_gap / 2, 0))
-	noise_bar.set_size(noise_bar_width, heatmap_size)
+	if add_noise_bar:
+		noise_bar = lc.add_frame("noise_bar")
+		noise_bar.set_anchor("bottomleft", ref_frame = group_bar,
+			ref_anchor = "bottomright", offsets = (axes_gap / 2, 0))
+		noise_bar.set_size(noise_bar_width, heatmap_size)
 
 	dendro = lc.add_frame("dendro")
-	dendro.set_anchor("bottomleft", ref_frame = noise_bar,
+	dendro.set_anchor("bottomleft", 
+		ref_frame = (noise_bar if add_noise_bar else group_bar),
 		ref_anchor = "bottomright", offsets = (axes_gap, 0))
 	dendro.set_size(dendro_width, heatmap_size)
 
@@ -256,18 +266,21 @@ def create_layout():
 
 	# apply axes style
 	for n in ["pbar_l", "colorbar", "pbar_r", "group_bar", "noise_bar", "dendro"]:
-		axes = layout[n]
-		for sp in axes.spines.values():
-			sp.set_visible(False)
-		axes.set_facecolor("#f0f0f8")
+		axes = layout.get(n, None)
+		if axes is not None:
+			for sp in axes.spines.values():
+				sp.set_visible(False)
+			axes.set_facecolor("#f0f0f8")
 
 	for n in ["pbar_l", "heatmap", "colorbar", "pbar_r", "group_bar", "noise_bar"]:
-		layout[n].tick_params(
-			left = False, labelleft = False,
-			right = False, labelright = False,
-			bottom = False, labelbottom = False,
-			top = False, labeltop = False
-		)
+		axes = layout.get(n, None)
+		if axes is not None:
+			axes.tick_params(
+				left = False, labelleft = False,
+				right = False, labelright = False,
+				bottom = False, labelbottom = False,
+				top = False, labeltop = False
+			)
 	layout["dendro"].tick_params(
 		left = False, labelleft = False,
 		right = False, labelright = False,
@@ -336,12 +349,13 @@ def plot_hca_noise_bar(axes, hca, *, noise_flag_list):
 	return
 
 
-def plot_hca(png, hca, *, spectra_data, dpi = 300):
+def plot_hca(png, hca, *, spectra_data, plot_noise_flag = False,
+		dpi = 300):
 	# skip plotting if png is None
 	if png is None:
 		return
 
-	layout = create_layout()
+	layout = create_layout(add_noise_bar = plot_noise_flag)
 	figure = layout["figure"]
 
 	# plot heatmap
@@ -368,8 +382,11 @@ def plot_hca(png, hca, *, spectra_data, dpi = 300):
 	# plot group bar
 	plot_hca_group_bar(layout["group_bar"], hca,
 		group_color_list = spectra_data["color"])
-	plot_hca_noise_bar(layout["noise_bar"], hca,
-		noise_flag_list = spectra_data["noise_flag"])
+
+	# plot hypothetical noise bar
+	if plot_noise_flag:
+		plot_hca_noise_bar(layout["noise_bar"], hca,
+			noise_flag_list = spectra_data["noise_flag"])
 
 
 	# save fig and clean up
@@ -393,10 +410,16 @@ def main():
 	)
 	hca.feed(data["inten"], title_list = data["title"])
 	# output hca labels
-	hca.save_labels(args.output, data["noise_flag"])
+	aux_fields = list()
+	if args.with_hypothetical_noise_flag:
+		aux_fields.append(data["noise_flag"])
+	hca.save_labels(args.output, *aux_fields)
 
 	# plot hca
-	plot_hca(args.plot, hca, spectra_data = data, dpi = args.dpi)
+	plot_hca(args.plot, hca,
+		spectra_data = data,
+		plot_noise_flag = args.with_hypothetical_noise_flag,
+		dpi = args.dpi)
 	return
 
 

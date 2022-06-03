@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import io
 import json
 import matplotlib
 import matplotlib.pyplot
@@ -30,7 +29,7 @@ def get_args():
 
 
 def load_raman_spectra_json(file):
-	with pylib.file_util.get_fp(file, "r") as fp:
+	with pylib.util.get_fp(file, "r") as fp:
 		ret = json.load(fp)
 	return ret
 

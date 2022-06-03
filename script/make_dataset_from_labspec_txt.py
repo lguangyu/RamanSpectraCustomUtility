@@ -51,6 +51,13 @@ class LabSpecTxtDumpRamanSpectra(pylib.raman_spectra.RamanSpectra):
 		self.file = file
 		return
 
+	def copy(self):
+		new = super().copy()
+		new.file = file
+		if hasattr(self, "hypothetical_noise_flag"):
+			new.hypothetical_noise_flag = self.hypothetical_noise_flag
+		return
+
 	@classmethod
 	def from_labspec_txt_dump(cls, file):
 		with pylib.util.get_fp(file, "r") as fp:
