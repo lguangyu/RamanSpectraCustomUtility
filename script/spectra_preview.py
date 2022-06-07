@@ -5,9 +5,9 @@ import json
 import matplotlib
 import matplotlib.pyplot
 import numpy
-import os
 import sys
 # custom lib
+import mpllayout
 import pylib
 
 
@@ -19,6 +19,9 @@ def get_args():
 		metavar = "prefix",
 		help = "output spectra preview images using this prefix "
 			"(default: <input>)")
+	ap.add_argument("--dpi", type = pylib.util.PosInt, default = 300,
+		metavar = "int",
+		help = "output image resolution (default: 300)")
 	# parse and refine args
 	args = ap.parse_args()
 	if args.input == "-":
@@ -28,44 +31,27 @@ def get_args():
 	return args
 
 
-def load_raman_spectra_json(file):
-	with pylib.util.get_fp(file, "r") as fp:
-		ret = json.load(fp)
-	return ret
+def create_layout():
+	lc = mpllayout.LayoutCreator(
+		left_margin		= 0.5,
+		right_margin	= 0.5,
+		top_margin		= 0.5,
+		bottom_margin	= 0.5,
+	)
 
+	spectra = lc.add_frame("spectra")
+	spectra.set_anchor("bottomleft")
+	spectra.set_size(8.0, 3.0)
 
-def setup_layout(figure):
-	# layout
-	layout = dict()
-	layout["figure"] = figure
-	# margins
-	left_margin_inch	= 0.5
-	right_margin_inch	= 0.5
-	bottom_margin_inch	= 0.5
-	top_margin_inch		= 0.5
-	# spectra axes dimensions
-	spec_width_inch		= 8.0
-	spec_height_inch	= 3.0
-	# figure dimensions
-	figure_width_inch	= left_margin_inch + spec_width_inch + right_margin_inch
-	figure_height_inch	= bottom_margin_inch + spec_height_inch\
-		+ top_margin_inch
-	figure.set_size_inches(figure_width_inch, figure_height_inch)
-	# spectra axes
-	spec_width	= spec_width_inch / figure_width_inch
-	spec_height	= spec_height_inch / figure_height_inch
-	spec_left	= left_margin_inch / figure_width_inch
-	spec_bottom	= bottom_margin_inch / figure_height_inch
-	spec = figure.add_axes([spec_left, spec_bottom, spec_width, spec_height])
-	layout["spectra"] = spec
+	layout = lc.create_figure_layout()
 
 	return layout
 
 
 def plot_spectra(png, *, shift, intensity, dpi = 300):
 	# setup layout
-	figure = matplotlib.pyplot.figure()
-	layout = setup_layout(figure)
+	layout = create_layout()
+	figure = layout["figure"]
 
 	# plot
 	axes = layout["spectra"]
@@ -80,7 +66,7 @@ def plot_spectra(png, *, shift, intensity, dpi = 300):
 	axes.set_ylabel(r"intensity", fontsize = 14)
 
 	# save and clean-up
-	matplotlib.pyplot.savefig(png, dpi = dpi)
+	figure.savefig(png, dpi = dpi)
 	matplotlib.pyplot.close()
 	return
 
@@ -88,11 +74,15 @@ def plot_spectra(png, *, shift, intensity, dpi = 300):
 def main():
 	args = get_args()
 	# load data
-	data = load_raman_spectra_json(args.input)
+	data = pylib.json_io.load_json(args.input)
 	# plot all spectra in dataset
 	for s in data:
 		png = "%s%s.png" % (args.output_prefix, s["title"])
-		plot_spectra(png, shift = s["shift"], intensity = s["intensity"])
+		plot_spectra(png,
+			shift = s["shift"],
+			intensity = s["intensity"],
+			dpi = args.dpi,
+		)
 	return
 
 

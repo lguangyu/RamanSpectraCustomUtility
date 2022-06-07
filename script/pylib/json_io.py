@@ -25,13 +25,13 @@ class GeneralJSONEncoder(json.JSONEncoder):
 		return ret
 
 
-def load_json(f, *ka, **kw):
+def load_json(f, *ka, cls = GeneralJSONDecoder, **kw):
 	with util.get_fp(f, "r") as fp:
-		ret = json.load(fp, *ka, cls = GeneralJSONDecoder, **kw)
+		ret = json.load(fp, *ka, cls = cls, **kw)
 	return ret
 
 
-def dump_json(o, f, *ka, **kw):
+def dump_json(o, f, *ka, cls = GeneralJSONEncoder, **kw):
 	with util.get_fp(f, "w") as fp:
-		json.dump(o, fp, *ka, cls = GeneralJSONEncoder, **kw)
+		json.dump(o, fp, *ka, cls = cls, **kw)
 	return
