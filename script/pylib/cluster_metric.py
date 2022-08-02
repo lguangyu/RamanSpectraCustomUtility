@@ -75,4 +75,4 @@ class SqrtCosineDist(ClusterMetric):
 		return 1.4145
 	@property
 	def cmap(self):
-		return "RdYlBu_r"
+		return "RdYlBu"

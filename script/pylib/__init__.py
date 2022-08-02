@@ -9,6 +9,7 @@ from . import json_io
 # method libraries
 from . import registry
 from . import cluster_metric
+from . import hca_cutoff_optimizer
 from . import normalize_1d
 
 from . import raman_spectra
