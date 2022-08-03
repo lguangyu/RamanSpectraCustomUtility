@@ -6,25 +6,56 @@ import numpy
 from . import registry
 
 
+class CustomRegistry(registry.Registry):
+	def get_key_list(self):
+		return sorted([k for k in self.keys() if k != "*"])
+
+	def get(self, key, *ka, **kw):
+		if key == "*":
+			raise ValueError("key '*' cannot be used as direct query")
+		elif isinstance(key, float):
+			ret = super().get("*", *ka, **kw)
+		else:
+			ret = super().get(key, *ka, **kw)
+		return ret
+
+
 class HCACutoffOptimizer(object):
 	@abc.abstractmethod
-	def __call__(self, model, dist_mat, d, cutoff_list, *ka, **kw) -> float:
+	def optimize(self, *, model, data, dist, cutoff_list, cutoff_final, **kw):
+		pass
+
+	@property
+	@abc.abstractmethod
+	def cutoff_final_str(self) -> str:
 		pass
 
 
 registry.new(registry_name = "hca_cutoff_optimizer",
+	reg_type = CustomRegistry,
 	value_type = HCACutoffOptimizer)
+
+
+@registry.get("hca_cutoff_optimizer").register("*")
+class FloatPlain(HCACutoffOptimizer):
+	def optimize(self, *, cutoff_final, **kw):
+		self.cutoff_final = cutoff_final
+		return
+
+	@property
+	def cutoff_final_str(self) -> float:
+		return "%.2f" % self.cutoff_final
 
 
 @registry.get("hca_cutoff_optimizer").register("aic")
 class AIC(HCACutoffOptimizer):
-	def __call__(self, model, data, dist, cutoff_list, *ka, **kw) -> float:
+	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis = 0))
 		aic_list = [self._calc_aic(model, data, dist, i, sigma)\
 			for i in cutoff_list]
 		# find the cutoff with least aic
-		ret = cutoff_list[numpy.argmin(aic_list)]
-		return ret
+		self.cutoff_final = cutoff_list[numpy.argmin(aic_list)]
+		return
 
 	def _calc_aic(self, model, data, dist, cutoff, sigma):
 		# adjust parameter and fit model
@@ -41,16 +72,20 @@ class AIC(HCACutoffOptimizer):
 		ret += 2 * d * model.n_clusters_
 		return ret
 
+	@property
+	def cutoff_final_str(self) -> str:
+		return "%.2f(AIC)" % self.cutoff_final
+
 
 @registry.get("hca_cutoff_optimizer").register("bic")
 class BIC(HCACutoffOptimizer):
-	def __call__(self, model, data, dist, cutoff_list, *ka, **kw) -> float:
+	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis = 0))
 		bic_list = [self._calc_bic(model, data, dist, i, sigma)\
 			for i in cutoff_list]
 		# find the cutoff with least bic
-		ret = cutoff_list[numpy.argmin(bic_list)]
-		return ret
+		self.cutoff_final = cutoff_list[numpy.argmin(bic_list)]
+		return
 
 	def _calc_bic(self, model, data, dist, cutoff, sigma):
 		# adjust parameter and fit model
@@ -66,3 +101,7 @@ class BIC(HCACutoffOptimizer):
 			ret += ((cluster_points / sigma) ** 2).sum()
 		ret += n * model.n_clusters_ * numpy.log(d)
 		return ret
+
+	@property
+	def cutoff_final_str(self) -> str:
+		return "%.2f(BIC)" % self.cutoff_final

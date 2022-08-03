@@ -22,7 +22,7 @@ CUTOFFOPT_METH = pylib.registry.get("hca_cutoff_optimizer")
 
 
 def get_args():
-	def typewrap_cutoff_threshold(v):
+	def cutoff_threshold_type(v):
 		if v in CUTOFFOPT_METH.get_key_list():
 			return v
 		return pylib.util.NonNegFloat(v)
@@ -35,7 +35,7 @@ def get_args():
 		choices = METRIC_METH.get_key_list(),
 		help = "metric for HCA (default: %s)" % METRIC_METH.default_key)
 	ap.add_argument("-t", "--cutoff-threshold",
-		type = typewrap_cutoff_threshold,
+		type = cutoff_threshold_type,
 		default = 0.7, metavar = "float or " +\
 			(" ").join(["'%s'" % i for i in CUTOFFOPT_METH.get_key_list()]),
 		help = "OPU cutoff threshold HCA (default: 0.7)")
@@ -96,11 +96,12 @@ def load_spectra_data_by_group_cfg(group_cfg_list: list):
 
 
 class OneWayHCAWithPlot(object):
-	def __init__(self, *ka, metric, cutoff, linkage = "average",
+	def __init__(self, *ka, metric, cutoff_target, linkage = "average",
 			dendrogram_orientation = "right", **kw):
 		super().__init__(*ka, **kw)
-		self.metric	= metric
-		self.cutoff	= cutoff
+		self.metric = metric
+		self.cutoff_target = cutoff_target
+		self.cutoff_opt = CUTOFFOPT_METH.get(cutoff_target)
 		self.dendrogram_orientation = dendrogram_orientation
 		self._hca = sklearn.cluster.AgglomerativeClustering(
 			linkage = linkage, affinity = "precomputed",
@@ -108,6 +109,9 @@ class OneWayHCAWithPlot(object):
 		)
 		return
 
+	@property
+	def cutoff(self) -> str or float:
+		return self.cutoff_opt.cutoff_final
 	@property
 	def linkage(self) -> str:
 		return self._hca.linkage
@@ -142,21 +146,23 @@ class OneWayHCAWithPlot(object):
 		).astype(float)
 		return linkage_matrix
 
-	def _get_cutoff(self, n_step) -> float:
+	def _optimize_cutoff(self, n_step) -> float:
 		# this function must be called after self.data_mat, self.metric_meth,
 		# self.dist_mat, and self._hca has been setup.
 		# in usual cases, it should be called internally by self.feed()
-		if isinstance(self.cutoff, float):
-			ret = self.cutoff
-		else:
-			cutoff_list = numpy.linspace(
-				self.dist_mat.min(),
-				self.dist_mat.max(),
-				n_step
-			)
-			opt = CUTOFFOPT_METH.get(self.cutoff)
-			ret = opt(self._hca, self.data_mat, self.dist_mat, cutoff_list)
-		return ret
+		cutoff_list = numpy.linspace(
+			self.dist_mat.min(),
+			self.dist_mat.max(),
+			n_step
+		)
+		self.cutoff_opt.optimize(
+			model			= self._hca,
+			data			= self.data_mat,
+			dist			= self.dist_mat,
+			cutoff_list		= cutoff_list,
+			cutoff_final	= self.cutoff_target
+		)
+		return self.cutoff
 
 
 	def feed(self, data, *, title_list):
@@ -168,9 +174,9 @@ class OneWayHCAWithPlot(object):
 		self.metric_meth = METRIC_METH.get(self.metric)
 		self.dist_mat = self.metric_meth(data)
 		# find the cutoff
-		self.cutoff_final = self._get_cutoff(n_step = 100)
+		self._optimize_cutoff(n_step = 100)
 		# calculate clusters, using sklearn's backend
-		self._hca.set_params(distance_threshold = self.cutoff_final)
+		self._hca.set_params(distance_threshold = self.cutoff)
 		self._hca.fit(self.dist_mat)
 		# calculate linkage matrix
 		self.linkage_matrix = self._calc_linkage_matrix(self._hca)
@@ -388,20 +394,17 @@ def plot_hca(png, hca, *, spectra_data, plot_noise_flag = False,
 	axes = layout["heatmap"]
 	hca.plot_heatmap(axes, layout["colorbar"])
 	# misc
-	if isinstance(hca.cutoff, str):
-		cutoff_str = "%s(%.2f)" % (hca.cutoff, hca.cutoff_final)
-	else:
-		cutoff_str = "%.2f" % hca.cutoff_final
 	axes.set_title("OPU clustering (hierarchical)\n"
 		"metric=%s; linkage=%s; cutoff=%s; #clusters=%u"\
-		% (hca.metric_meth.name_str, hca.linkage, cutoff_str, hca.n_clusters),
+		% (hca.metric_meth.name_str, hca.linkage,
+		hca.cutoff_opt.cutoff_final_str, hca.n_clusters),
 		fontsize = 16
 	)
 
 	# plot dendrogram
 	axes = layout["dendro"]
 	hca.plot_dendrogram(axes, i2d_ratio = layout["dendro_i2d"])
-	axes.axvline(hca.cutoff_final, linestyle = "-", linewidth = 1.0,
+	axes.axvline(hca.cutoff, linestyle = "-", linewidth = 1.0,
 		color = "#ff0000", zorder = 4)
 
 	# plot pbar
@@ -434,7 +437,7 @@ def main():
 	# run hca
 	hca = OneWayHCAWithPlot(
 		metric = args.metric,
-		cutoff = args.cutoff_threshold,
+		cutoff_target = args.cutoff_threshold,
 		linkage = "average",
 		dendrogram_orientation = "right",
 	)

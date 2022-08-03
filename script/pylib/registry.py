@@ -3,8 +3,12 @@
 _REGISTRY_STUB = dict()
 
 
-def new(*ka, **kw):
-	new_reg = Registry(*ka, **kw)
+def new(*ka, reg_type = None, **kw):
+	if reg_type is None:
+		reg_type = Registry
+	elif not issubclass(reg_type, Registry):
+		raise TypeError("reg_type must be (subclass of) Registry")
+	new_reg = reg_type(*ka, **kw)
 	key = new_reg.registry_name
 	if key in _REGISTRY_STUB:
 		raise ValueError("registry name '%s' already exists" % key)
