@@ -42,6 +42,11 @@ def get_args():
 	args = ap.parse_args()
 	if args.output == "-":
 		args.output = sys.stdout
+	if args.mark_hypothetical_noise_flag:
+		print("warning: --mark-hypothetical-noise-flag is experimental; it is "
+			"still in development and should not be used as a peer-reviewed "
+			"method to identify spectra with potentially high level of noise.",
+			file = sys.stderr)
 	return args
 
 
