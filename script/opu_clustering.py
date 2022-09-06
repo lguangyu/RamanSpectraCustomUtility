@@ -46,6 +46,10 @@ def get_args():
 	ap.add_argument("-p", "--plot", type = str, metavar = "png",
 		help = "if set, also output a metric heatmap and HCA dendrogram plot "
 			"image (default: no)")
+	ap.add_argument("--plot-legend-space", type = float, default = 1.2,
+		metavar = "inch",
+		help = "extra right margin space for legends in inches (default: 1.2); "
+			"this argument is ignored if --plot is not set")
 	ap.add_argument("--dpi", type = pylib.util.PosInt, default = 300,
 		metavar = "int",
 		help = "output image resolution (default: 300)")
@@ -240,10 +244,10 @@ class OneWayHCAWithPlot(object):
 		return lines
 
 
-def create_layout(add_noise_bar = False):
+def create_layout(legend_space, add_noise_bar = False):
 	lc = mpllayout.LayoutCreator(
 		left_margin		= 0.2,
-		right_margin	= 0.2,
+		right_margin	= legend_space + 0.2,
 		top_margin		= 1.0,
 		bottom_margin	= 0.5,
 	)
@@ -353,6 +357,11 @@ def plot_hca_label_pbar(axes, hca, *, color_list: CyclicIndexedList):
 			edgecolor = "none", facecolor = color_list[label]
 		)
 		axes.add_patch(patch)
+	# add label
+	axes.text(0.5, 0.0, "OPU ", fontsize = 12, rotation = 90,
+		horizontalalignment = "center", verticalalignment = "top"
+	)
+
 	axes.set_xlim(0, 1)
 	axes.set_ylim(0, hca.n_leaves)
 	return
@@ -364,6 +373,11 @@ def plot_hca_group_bar(axes, hca, *, group_color_list):
 			edgecolor = "none", facecolor = group_color_list[leaf]
 		)
 		axes.add_patch(patch)
+	# add label
+	axes.text(0.5, 0.0, "group ", fontsize = 12, rotation = 90,
+		horizontalalignment = "center", verticalalignment = "top"
+	)
+
 	axes.set_xlim(0, 1)
 	axes.set_ylim(0, hca.n_leaves)
 	return
@@ -381,13 +395,28 @@ def plot_hca_noise_bar(axes, hca, *, noise_flag_list):
 	return
 
 
-def plot_hca(png, hca, *, spectra_data, plot_noise_flag = False,
-		dpi = 300):
+def plot_group_legend(axes, *, group_data):
+	handles = list()
+	for g in group_data:
+		p = matplotlib.patches.Rectangle((0, 0), 0, 0, edgecolor = "none",
+			facecolor = g["color"], label = g["name"]
+		)
+		handles.append(p)
+
+	ret = axes.legend(handles = handles, loc = 2, bbox_to_anchor = (1.02, 1.02),
+		title = "Groups", frameon = True, fontsize = 10, handlelength = 0.8,
+		title_fontsize = 12,
+	)
+	return ret
+
+
+def plot_hca(png, hca, *, spectra_data, group_data, legend_space,
+		plot_noise_flag = False, dpi = 300):
 	# skip plotting if png is None
 	if png is None:
 		return
 
-	layout = create_layout(add_noise_bar = plot_noise_flag)
+	layout = create_layout(legend_space, add_noise_bar = plot_noise_flag)
 	figure = layout["figure"]
 
 	# plot heatmap
@@ -421,6 +450,8 @@ def plot_hca(png, hca, *, spectra_data, plot_noise_flag = False,
 		plot_hca_noise_bar(layout["noise_bar"], hca,
 			noise_flag_list = spectra_data["noise_flag"])
 
+	# plot group legend
+	plot_group_legend(layout["dendro"], group_data = group_data)
 
 	# save fig and clean up
 	figure.savefig(png, dpi = dpi)
@@ -451,6 +482,8 @@ def main():
 	# plot hca
 	plot_hca(args.plot, hca,
 		spectra_data = data,
+		group_data = groups,
+		legend_space = args.plot_legend_space,
 		plot_noise_flag = args.with_hypothetical_noise_flag,
 		dpi = args.dpi)
 	return
