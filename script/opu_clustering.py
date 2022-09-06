@@ -475,6 +475,7 @@ def main():
 	hca.feed(data["inten"], title_list = data["title"])
 	# output hca labels
 	aux_fields = list()
+	aux_fields.append(data["group"])
 	if args.with_hypothetical_noise_flag:
 		aux_fields.append(data["noise_flag"])
 	hca.save_labels(args.output, *aux_fields)
