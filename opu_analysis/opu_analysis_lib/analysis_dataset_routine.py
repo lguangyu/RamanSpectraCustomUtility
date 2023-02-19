@@ -85,15 +85,28 @@ class AnalysisDatasetRoutine(object):
 		"""
 		cfg = util.load_json(cfg_file)
 		if reconcile_param is None: reconcile_param = dict()
-		dataset_list = [SpectraDataset.from_file(c["file"], **reconcile_param) \
-			for c in cfg]
+		dataset_list = list()
+		for c in cfg:
+			if isinstance(c["file"], str):
+				dataset_list.append(SpectraDataset.from_file(c["file"],
+					name=c["name"], **reconcile_param
+				))
+			elif isinstance(c["file"], list):
+				dataset_list.extend([SpectraDataset.from_file(f,
+					name=c["name"], spectra_names=f, **reconcile_param
+				) for f in c["file"]])
+			else:
+				raise ValueError("'file' field of the dataset config json must "
+					"be str or list, got '%s'" % type(c["file"]).__name__)
 		dataset = SpectraDataset.concatenate(*dataset_list)
-		# construct the biosample and biosample color lists based on the config
+		# construct the biosample and biosample color lists
 		biosample = list()
-		biosample_color = list()
-		for c, d in zip(cfg, dataset_list):
-			biosample.extend([c["name"]] * d.n_spectra)
-			biosample_color.extend([c.get("color", "#000000")] * d.n_spectra)
+		for d in dataset_list:
+			biosample.extend([d.name] * d.n_spectra)
+		# for biosample_color, using the biosample list and the original cfg
+		biosample_color_map = {c["name"]: c.get("color", "#000000") \
+			for c in cfg}
+		biosample_color = [biosample_color_map[k] for k in biosample]
 
 		new = cls(dataset, biosample=biosample, biosample_color=biosample_color,
 			**kw)

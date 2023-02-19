@@ -59,6 +59,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		self.cutoff_opt = self.cutoff_opt_reg.get(cutoff)
 		self.cutoff_pend = cutoff
 		self.linkage = linkage
+		self.opu_min_size = opu_min_size
 		self.hca = future.sklearn_cluster_AgglomerativeClustering(
 			linkage=self.linkage, metric="precomputed",
 			# metric="precomputed" as we manually compute the distance matrix
@@ -128,10 +129,12 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 
 		# misc
 		figure.suptitle("OPU clustering (hierarchical)\n"
-			"metric=%s; linkage=%s; cutoff=%s; #raw clusters=%u"\
+			"metric=%s; linkage=%s; cutoff=%s; raw clusters=%u; "
+			"OPU min. size=%u"\
 			% (self.metric.name_str, self.linkage,
-			self.cutoff_opt.cutoff_final_str, self.n_clusters),
-			fontsize = 16
+				self.cutoff_opt.cutoff_final_str, self.n_clusters,
+				self.opu_min_size,
+			), fontsize = 16
 		)
 
 		# save fig and clean up
@@ -208,7 +211,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		lc = mpllayout.LayoutCreator(
 			left_margin		= 0.2,
 			right_margin	= legend_space + 0.2,
-			top_margin		= 1.0,
+			top_margin		= 0.7,
 			bottom_margin	= 0.5,
 		)
 
@@ -255,10 +258,16 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		layout["dendro_i2d"] = dendro.get_width() / dendro.get_height()
 
 		# apply axes style
-		for n in ["pbar_l", "colorbar", "pbar_r", "biosample_bar", "dendro"]:
+		for n in ["colorbar", "biosample_bar", "dendro"]:
 			axes = layout[n]
 			for sp in axes.spines.values():
 				sp.set_visible(False)
+			axes.set_facecolor("#f0f0f8")
+
+		for n in ["pbar_l", "pbar_r"]:
+			axes = layout[n]
+			for sp in axes.spines.values():
+				sp.set_edgecolor("#c0c0c0")
 			axes.set_facecolor("#f0f0f8")
 
 		for n in ["pbar_l", "heatmap", "colorbar", "pbar_r", "biosample_bar"]:
@@ -330,7 +339,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		color_list = self.clusters_colors
 		for i, leaf in enumerate(self.dendrogram["leaves"]):
 			label = remapped_hca_label[leaf]
-			facecolor = "#d0d0d0" if label is None else color_list[label]
+			facecolor = "#ffffff" if label is None else color_list[label]
 			patch = matplotlib.patches.Rectangle((0, i), 1, 1,
 				edgecolor="none", facecolor=facecolor
 			)

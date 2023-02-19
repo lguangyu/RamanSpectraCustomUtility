@@ -57,13 +57,14 @@ class SpectraDataset(object):
 		return
 
 	@classmethod
-	def from_file(cls, f: str, *, delimiter="\t", name=None, bin_size=None,
-			wavenum_low=400.0, wavenum_high=1800.0,
+	def from_file(cls, f: str, *, delimiter="\t", name=None, spectra_names=None,
+			bin_size=None, wavenum_low=400.0, wavenum_high=1800.0,
 			normalize=norm_meth.default_key):
 		raw = numpy.loadtxt(f, delimiter=delimiter, dtype=object)
 		wavenum = raw[0, :].astype(float)
 		intens = raw[1:, :].astype(float)
-		new = cls(wavenum=wavenum, intens=intens, name=name or f)
+		new = cls(wavenum=wavenum, intens=intens, name=name or f,
+			spectra_names=spectra_names)
 		new.bin_and_filter_wavenum(bin_size=bin_size, wavenum_low=wavenum_low,
 			wavenum_high=wavenum_high, inplace=True)
 		new.normalize(normalize, inplace=True)
