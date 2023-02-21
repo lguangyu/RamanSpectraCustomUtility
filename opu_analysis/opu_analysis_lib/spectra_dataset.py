@@ -2,6 +2,7 @@
 
 import numpy
 # custom lib
+from . import util
 from . import registry
 
 
@@ -57,18 +58,60 @@ class SpectraDataset(object):
 		return
 
 	@classmethod
-	def from_file(cls, f: str, *, delimiter="\t", name=None, spectra_names=None,
+	def from_file(cls, f: str, *, delimiter="\t", name=None,
+			with_spectra_names=False, spectra_names_override=None,
 			bin_size=None, wavenum_low=400.0, wavenum_high=1800.0,
 			normalize=norm_meth.default_key):
+		"""
+		read spectra dataset form text file in tabular format
+		the read table must have the first line as the wave number (wavnum)
+		information; the spectra names are optionl, but they must be available
+		in the first column if used
+
+		with_sepctra_name: set True if the file contains spactra names
+		spectra_names_override: behavior depends on <with_spectra_names> and the
+			value of itself; specifically:
+			* when <spectra_names_override> is set, it's values will be used to
+				determine the spectra names no matter what <with_spectra_names>
+				is.
+			* when <spectra_names_override> is not set (None), try read from
+				file if <with_spectra_names> is True, otherwise deduct from the
+				file name.
+			* if <spectra_names_override> is a list, it must be of the same rows
+				as the intens data, representing each spectrum's name
+			* if <spectra_names_override> is a str, it is used as the prefix
+				in deducting the spectra names; each spectra will be named after
+				the prefix followed by its ordinal number
+		"""
 		raw = numpy.loadtxt(f, delimiter=delimiter, dtype=object)
-		wavenum = raw[0, :].astype(float)
-		intens = raw[1:, :].astype(float)
+		# parse wavenum and intens from file
+		intens_start_col = 1 if with_spectra_names else 0
+		wavenum = raw[0, intens_start_col:].astype(float)
+		intens = raw[1:, intens_start_col:].astype(float)
+		# parse sample names
+		if with_spectra_names and (spectra_names_override is None):
+			spectra_names_override = raw[1:, 0]
 		new = cls(wavenum=wavenum, intens=intens, name=name or f,
-			spectra_names=spectra_names)
+			spectra_names=spectra_names_override)
 		new.bin_and_filter_wavenum(bin_size=bin_size, wavenum_low=wavenum_low,
 			wavenum_high=wavenum_high, inplace=True)
 		new.normalize(normalize, inplace=True)
 		return new
+
+	def save_file(self, f, *, delimiter="\t", with_spectra_names=False):
+		with util.get_fp(f, "w") as fp:
+			# header line
+			print(delimiter.join(
+				([""] if with_spectra_names else []) \
+				+ [str(i) for i in self.wavenum]
+			), file=fp)
+			# data section
+			for name, data in zip(self.spectra_names, self.intens):
+				print(delimiter.join(
+					([name] if with_spectra_names else []) \
+					+ [str(i) for i in data]
+				), file=fp)
+		return
 
 	def bin_and_filter_wavenum(self, *, bin_size=None, wavenum_low=400.0,
 			wavenum_high=1800.0, inplace=False):

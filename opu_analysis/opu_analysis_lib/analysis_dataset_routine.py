@@ -90,10 +90,12 @@ class AnalysisDatasetRoutine(object):
 			if isinstance(c["file"], str):
 				dataset_list.append(SpectraDataset.from_file(c["file"],
 					name=c["name"], **reconcile_param
+					# without setting spectra_names_override it will deduct from
+					# name, i.e. spectra_names_override=c["name"]
 				))
 			elif isinstance(c["file"], list):
 				dataset_list.extend([SpectraDataset.from_file(f,
-					name=c["name"], spectra_names=f, **reconcile_param
+					name=c["name"], spectra_names_override=f, **reconcile_param
 				) for f in c["file"]])
 			else:
 				raise ValueError("'file' field of the dataset config json must "
