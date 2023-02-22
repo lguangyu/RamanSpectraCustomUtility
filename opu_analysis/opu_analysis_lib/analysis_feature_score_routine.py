@@ -18,19 +18,28 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 	score_meth = registry.get("feature_score")
 
 
-	def rank_features(self, method=score_meth.default_key) -> numpy.ndarray:
+	def rank_features(self, method=score_meth.default_key) -> dict:
 		"""
 		rank features with label info acquired from HCA clustering
 
-		return a index arrays, each elements represents the index of a feature,
-		ranked in descending order; i.e. the first element is the index of the
-		most important feature, etc.
+		return a dict of index arrays, each array represents the sorted indices
+		of features distinguishing each opu from the rest of opus in one-vs-rest
+		(OVR) fashion;
+		feature indicies are ranked in descending order; i.e. the first element
+		is the index of the most important feature, etc.
+
+		results are saved in self.feature_rank_index
 		"""
 		score_meth = self.score_meth.get(method)
-		self.feature_score_meth = score_meth
-
-		ret = score_meth.feature_score(self.dataset.intens, self.hca_labels)
-		self.feature_rank = ret
+		self.feature_score_meth = score_meth  # save into object for later use
+		# calculate in ovr
+		ret = dict()
+		for label in self.remapped_hca_label_unique:
+			if label is None:  # do not calculate None
+				continue
+			y = numpy.equal(self.remapped_hca_label, label).astype(int)
+			ret[label] = score_meth(self.dataset.intens, y)
+		self.feature_rank_index = ret
 		return ret
 
 
@@ -38,35 +47,46 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		if not png:
 			return
 		
-		# create layout
-		layout = self.__create_layout()
-		figure = layout["figure"]
-
 		# prepare the rank matrix
-		n_wavenum = self.dataset.n_wavenum # n_wavenum is number of features
-		feat_rank = numpy.empty(n_wavenum, dtype=int)
-		feat_rank[self.feature_rank] = numpy.arange(n_wavenum)
+		n_wavenum = self.dataset.n_wavenum  # n_wavenum is number of features
+		plot_opu_labels = sorted(self.feature_rank_index.keys())
+		n_opus = len(plot_opu_labels)
+		rank_mat = numpy.empty((n_opus, n_wavenum), dtype=int)
+		for i, v in enumerate(plot_opu_labels):
+			rank_mat[i, self.feature_rank_index[v]] = numpy.arange(n_wavenum)
+
+		# create layout
+		layout = self.__create_layout(n_row=n_opus)
+		figure = layout["figure"]
 
 		# plot heatmap
 		wavenum_low = self.dataset.wavenum_low
 		wavenum_high = self.dataset.wavenum_high
 		ax = layout["axes"]
 		X = numpy.linspace(wavenum_low, wavenum_high, n_wavenum + 1)
-		Y = numpy.arange(2)
-		ax.pcolor(X.reshape(1, -1), Y.reshape(-1, 1),
-			feat_rank.reshape(-1, n_wavenum), cmap="viridis_r", zorder=2
+		Y = numpy.arange(0, n_opus + 1)
+		ax.pcolor(X.reshape(1, -1), Y.reshape(-1, 1), rank_mat,
+			cmap="viridis_r", zorder=2
 		)
 		# plot mask
-		mask_y = 1.0 - (feat_rank / feat_rank.max())
-		interp_mask_y = numpy.interp(X, self.dataset.wavenum, mask_y)
+		for i in range(n_opus):
+			mask_y = (1.0 - (rank_mat[i] / rank_mat[i].max())) * 0.9
+			interp_mask_y = numpy.interp(X, self.dataset.wavenum, mask_y)
+			ax.fill_between(X, interp_mask_y + i, 1 + i,
+				edgecolor="none", facecolor="#f0f0f8", zorder=3
+			)
 
-		ax.fill_between(X, interp_mask_y, 1.0,
-			edgecolor="none", facecolor="#f0f0f8", zorder=3
-		)
+		# add opu label text on the right
+		text_x = wavenum_low + (wavenum_high - wavenum_low) * 1.02
+		for i, label in enumerate(plot_opu_labels):
+			ax.text(text_x, i + 0.5, "OPU_%02u" % label, clip_on=False,
+				color="#000000", fontsize=10,
+				horizontalalignment="left", verticalalignment="center"
+			)
 
 		# misc
 		ax.set_xlim(wavenum_low, wavenum_high)
-		ax.set_ylim(0, 1)
+		ax.set_ylim(0, n_opus)
 		title = "Feature rank by %s" % self.feature_score_meth.name_str
 		ax.set_title(title, fontsize = 12)
 
@@ -76,17 +96,17 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		return
 
 
-	def __create_layout(self) -> dict:
+	def __create_layout(self, n_row) -> dict:
 		lc = mpllayout.LayoutCreator(
 			left_margin		= 0.2,
-			right_margin	= 0.2,
+			right_margin	= 1.2,
 			top_margin		= 0.5,
 			bottom_margin	= 0.4,
 		)
 
 		axes = lc.add_frame("axes")
 		axes.set_anchor("bottomleft")
-		axes.set_size(5.0, 1.0)
+		axes.set_size(5.0, 0.25 * n_row)
 
 		# create layout
 		layout = lc.create_figure_layout()

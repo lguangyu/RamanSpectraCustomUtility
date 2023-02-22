@@ -16,6 +16,8 @@ class FeatureScoreMethod(abc.ABC):
 	@abc.abstractmethod
 	def name_str(self) -> str:
 		pass
+	def __call__(self, *ka, **kw):
+		return self.feature_score(*ka, **kw)
 
 
 registry.new(registry_name="feature_score", value_type=FeatureScoreMethod)
