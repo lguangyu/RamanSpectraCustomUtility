@@ -1,0 +1,3 @@
+[submodule "mpllayout"]
+	path = mpllayout
+	url = git@github.com:lguangyu/MatplotlibLayout.git
