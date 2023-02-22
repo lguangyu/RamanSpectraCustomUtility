@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import collections
 import matplotlib
 import matplotlib.cm
@@ -9,6 +10,7 @@ import matplotlib.pyplot
 import numpy
 import scipy.cluster
 import sys
+import typing
 # custom lib
 import mpllayout
 from . import util
@@ -52,14 +54,39 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 			key = lambda x: sys.maxsize if x is None else x)
 
 
+	def parse_and_store_opu_min_size(self, raw_value=None):
+		# convert non-real value into real
+		if raw_value is None:
+			v = int(0)
+		elif isinstance(raw_value, str):
+			v = float(raw_value)
+		else:
+			v = value
+		# parse float (fraction) into int
+		# this section contains type check as well
+		try:
+			if int(v) == v:  # int
+				ret = util.NonNegInt(v)
+			else:  # float with decimal
+				v = util.Fraction(v)
+				ret = int(numpy.math.ceil(v * self.dataset.n_spectra))
+		except ValueError:
+			raise ValueError("opu_min_size must be non-negative integer or "
+				"float between 0 and 1, got '%s'" % raw_value)
+		# record to self object
+		self.opu_min_size = ret
+		return ret
+
+
 	def run_hca(self, *, metric=metric_reg.default_key, cutoff=0.7,
-			linkage="average", opu_min_size=None):
+			linkage="average",
+			opu_min_size: typing.Union[str, int, float, None] = None):
 		# create the hca object
 		self.metric = self.metric_reg.get(metric)
 		self.cutoff_opt = self.cutoff_opt_reg.get(cutoff)
 		self.cutoff_pend = cutoff
 		self.linkage = linkage
-		self.opu_min_size = opu_min_size
+		self.parse_and_store_opu_min_size(opu_min_size)
 		self.hca = future.sklearn_cluster_AgglomerativeClustering(
 			linkage=self.linkage, metric="precomputed",
 			# metric="precomputed" as we manually compute the distance matrix
@@ -84,7 +111,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 			no_plot=True
 		)
 		# sort opu labels
-		self.__sort_and_filter_cluster_labels(opu_min_size)
+		self.__sort_and_filter_cluster_labels()
 		return self
 
 
@@ -209,13 +236,12 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		return self.cutoff_opt.cutoff_final
 
 
-	def __sort_and_filter_cluster_labels(self, opu_min_size=None):
-		if opu_min_size is None: opu_min_size = 0
+	def __sort_and_filter_cluster_labels(self):
 		sorted_labels = collections.Counter(self.hca_labels).most_common()
 		label_remap = dict()
 		for i, v in enumerate(sorted_labels):
 			label, count = v
-			if count >= opu_min_size:
+			if count >= self.opu_min_size:
 				label_remap[label] = i
 		self._label_remap = label_remap
 		return

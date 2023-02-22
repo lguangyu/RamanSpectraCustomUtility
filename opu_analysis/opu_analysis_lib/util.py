@@ -3,6 +3,7 @@
 import io
 import json
 import sys
+import typing
 
 
 class PosInt(int):
@@ -10,6 +11,15 @@ class PosInt(int):
 		new = super().__new__(cls, *ka, **kw)
 		if new <= 0:
 			raise ValueError("%s cannot be 0 or negative, got '%d'"\
+				% (cls.__name__, new))
+		return new
+
+
+class NonNegInt(int):
+	def __new__(cls, *ka, **kw):
+		new = super().__new__(cls, *ka, **kw)
+		if new < 0:
+			raise ValueError("%s cannot be negative, got '%d'"\
 				% (cls.__name__, new))
 		return new
 
@@ -29,6 +39,15 @@ class NonNegFloat(float):
 		if new < 0:
 			raise ValueError("%s cannot be negative, got '%f'"\
 				% (cls.__name__, new))
+		return new
+
+
+class Fraction(float):
+	def __new__(cls, *ka, **kw):
+		new = super().__new__(cls, *ka, **kw)
+		if (new < 0) or (new > 1):
+			raise ValueError("%s cannot be less than 0 or greater than 1, got "
+				"'%f'" % (cls.__name__, new))
 		return new
 
 

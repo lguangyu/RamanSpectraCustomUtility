@@ -43,12 +43,14 @@ def get_args():
 		metavar=("|").join(["float"] \
 			+ oal.AnalysisHCARoutine.cutoff_opt_reg.list_keys()),
 		help="OPU clustering cutoff threshold [0.7]")
-	ag.add_argument("--opu-min-size", "-s", type=int, default=0,
-		metavar="int",
-		help="minimum spectral count to report an OPU, 0 means report all [0]")
+	ag.add_argument("--opu-min-size", "-s", type=str, default="0",
+		metavar="float|int",
+		help="minimal spectral count in an HCA cluster to be reported as an OPU"
+			", 0 means report all; accepts int (plain size) or float between "
+			"0-1 (fraction w.r.t total number of spectra analyzed [0]")
 	ag.add_argument("--opu-labels", type=str,
 		metavar="txt",
-		help="if set, output OPU label per spectra to this file [no]")
+		help="if set, output OPU label per spectrum to this file [no]")
 	ag.add_argument("--opu-collection-prefix", type=str,
 		metavar="prefix",
 		help="if set, output spectral data files, each corresponds to a "
@@ -94,6 +96,8 @@ def main():
 		),
 	)
 	# run hca analysis, i.e. opu clustering
+	# opu_min_size can be int(>=0), float(0<=x<=1), a str looks like an int or
+	# float aforementioned, or None
 	opu_anal.run_hca(metric=args.metric, cutoff=args.cutoff_threshold,
 		opu_min_size=args.opu_min_size)
 	# save opu clustering data

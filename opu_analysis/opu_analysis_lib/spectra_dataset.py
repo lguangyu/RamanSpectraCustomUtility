@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import collections
 import numpy
+import typing
 # custom lib
 from . import util
 from . import registry
@@ -208,9 +208,9 @@ class SpectraDataset(object):
 	def n_wavenum(self):
 		return len(self.wavenum)
 
-	def get_sub_dataset(self, indices: collections.abc.Iterable):
+	def get_sub_dataset(self, indices: typing.Iterable):
 		# make sure that indices are array, not single index value
-		if not isinstance(indices, collections.abc.Iterable):
+		if not isinstance(indices, typing.Iterable):
 			indices = [indices]
 		intens = self.intens[indices, :]
 		spectra_names = self.spectra_names[indices]
