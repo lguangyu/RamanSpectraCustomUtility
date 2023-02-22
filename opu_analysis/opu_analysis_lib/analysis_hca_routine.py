@@ -88,7 +88,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		return self
 
 
-	def save_hca_labels(self, f, delimiter="\t"):
+	def save_opu_labels(self, f, *, delimiter="\t"):
 		if not f:
 			return
 		with util.get_fp(f, "w") as fp:
@@ -100,7 +100,21 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		return
 
 
-	def plot_hca(self, png, *, dpi = 300):
+	def save_opu_collections(self, prefix, *, delimiter="\t",
+			with_spectra_names=True):
+		if not prefix:
+			return
+		for label in self.remapped_hca_label_unique:
+			if label is not None:
+				mask = numpy.equal(self.remapped_hca_label, label)
+				file_name = prefix + (".OPU_%02u.txt" % label)
+				self.dataset.get_sub_dataset(mask).save_file(file_name,
+					delimiter=delimiter, with_spectra_names=with_spectra_names
+				)
+		return
+
+
+	def plot_opu_hca(self, png, *, dpi = 300):
 		if png is None:
 			return
 		# create figure layout

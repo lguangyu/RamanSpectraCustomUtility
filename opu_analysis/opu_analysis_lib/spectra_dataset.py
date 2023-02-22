@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import collections
 import numpy
 # custom lib
 from . import util
@@ -206,3 +207,14 @@ class SpectraDataset(object):
 	@property
 	def n_wavenum(self):
 		return len(self.wavenum)
+
+	def get_sub_dataset(self, indices: collections.abc.Iterable):
+		# make sure that indices are array, not single index value
+		if not isinstance(indices, collections.abc.Iterable):
+			indices = [indices]
+		intens = self.intens[indices, :]
+		spectra_names = self.spectra_names[indices]
+		# the ret spectra dataset with subset data
+		ret = type(self)(self.wavenum.copy(), intens,
+			spectra_names=spectra_names, name=self.name)
+		return ret
