@@ -43,6 +43,10 @@ def get_args():
 		metavar=("|").join(["float"] \
 			+ oal.AnalysisHCARoutine.cutoff_opt_reg.list_keys()),
 		help="OPU clustering cutoff threshold [0.7]")
+	ag.add_argument("--max-n-opus", "-M", type=oal.util.NonNegInt, default=0,
+		metavar="int",
+		help="maximum number of top-sized clusters to be reported as OPU, 0 "
+			"means no limitation [0]")
 	ag.add_argument("--opu-min-size", "-s", type=str, default="0",
 		metavar="float|int",
 		help="minimal spectral count in an HCA cluster to be reported as an OPU"
@@ -99,7 +103,7 @@ def main():
 	# opu_min_size can be int(>=0), float(0<=x<=1), a str looks like an int or
 	# float aforementioned, or None
 	opu_anal.run_hca(metric=args.metric, cutoff=args.cutoff_threshold,
-		opu_min_size=args.opu_min_size)
+		max_n_opus=args.max_n_opus, opu_min_size=args.opu_min_size)
 	# save opu clustering data
 	opu_anal.save_opu_labels(args.opu_labels)
 	opu_anal.save_opu_collections(args.opu_collection_prefix)

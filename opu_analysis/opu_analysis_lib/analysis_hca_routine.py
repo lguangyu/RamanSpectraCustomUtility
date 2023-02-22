@@ -79,13 +79,14 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 
 
 	def run_hca(self, *, metric=metric_reg.default_key, cutoff=0.7,
-			linkage="average",
+			linkage="average", max_n_opus=0,
 			opu_min_size: typing.Union[str, int, float, None] = None):
 		# create the hca object
 		self.metric = self.metric_reg.get(metric)
 		self.cutoff_opt = self.cutoff_opt_reg.get(cutoff)
 		self.cutoff_pend = cutoff
 		self.linkage = linkage
+		self.max_n_opus = max_n_opus
 		self.parse_and_store_opu_min_size(opu_min_size)
 		self.hca = future.sklearn_cluster_AgglomerativeClustering(
 			linkage=self.linkage, metric="precomputed",
@@ -239,8 +240,10 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 	def __sort_and_filter_cluster_labels(self):
 		sorted_labels = collections.Counter(self.hca_labels).most_common()
 		label_remap = dict()
-		for i, v in enumerate(sorted_labels):
-			label, count = v
+		for i, (label, count) in enumerate(sorted_labels):
+			# check if hit the max_n_opus already, if self.max_n_opus is not 0
+			if self.max_n_opus and (i >= self.max_n_opus):
+				break
 			if count >= self.opu_min_size:
 				label_remap[label] = i
 		self._label_remap = label_remap
