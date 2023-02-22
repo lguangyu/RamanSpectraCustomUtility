@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import argparse
 import collections
+import sys
+import typing
+
 import matplotlib
 import matplotlib.cm
 import matplotlib.colors
@@ -9,13 +11,12 @@ import matplotlib.patches
 import matplotlib.pyplot
 import numpy
 import scipy.cluster
-import sys
-import typing
+
 # custom lib
 import mpllayout
-from . import util
-from . import future # import sklearn.cluster.AgglomerativeClustering here
-from . import registry
+
+from . import future  # import sklearn.cluster.AgglomerativeClustering here
+from . import registry, util
 from .analysis_dataset_routine import AnalysisDatasetRoutine
 
 
@@ -30,12 +31,15 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 	@property
 	def cutoff(self):
 		return self.cutoff_opt.cutoff_final
+
 	@property
 	def hca_labels(self) -> int:
 		return self.hca.labels_
+
 	@property
 	def n_clusters(self) -> int:
 		return self.hca_labels.max() + 1
+
 	@property
 	def remapped_hca_label(self) -> list:
 		"""
@@ -45,14 +49,14 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		that the lower the label value, larger the cluster
 		"""
 		return [self._label_remap.get(i, None) for i in self.hca_labels]
+
 	@property
 	def remapped_hca_label_unique(self) -> list:
 		# this sort lambda ensures that None will not raise an error and
 		# is always at the end of this array
 		# None represents the opu "label" of small clusters
 		return sorted(set(self.remapped_hca_label),
-			key = lambda x: sys.maxsize if x is None else x)
-
+			key=lambda x: sys.maxsize if x is None else x)
 
 	def parse_and_store_opu_min_size(self, raw_value=None):
 		# convert non-real value into real
@@ -77,7 +81,6 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		self.opu_min_size = ret
 		return ret
 
-
 	def run_hca(self, *, metric=metric_reg.default_key, cutoff=0.7,
 			linkage="average", max_n_opus=0,
 			opu_min_size: typing.Union[str, int, float, None] = None):
@@ -100,7 +103,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		# calculate distance matrix
 		self.dist_mat = self.metric(self.dataset.intens)
 		# find the cutoff
-		self.__optimize_cutoff(n_step = 100)
+		self.__optimize_cutoff(n_step=100)
 		# calculate clusters, using sklearn's backend
 		self.hca.set_params(distance_threshold=self.cutoff)
 		self.hca.fit(self.dist_mat)
@@ -115,7 +118,6 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		self.__sort_and_filter_cluster_labels()
 		return self
 
-
 	def save_opu_labels(self, f, *, delimiter="\t"):
 		if not f:
 			return
@@ -124,9 +126,8 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 				name, label = i
 				# if a label is None (when cluster size below opu_min_size),
 				# write the label as "-" instead
-				print((delimiter).join([name, str(label or "-")]), file = fp)
+				print((delimiter).join([name, str(label or "-")]), file=fp)
 		return
-
 
 	def save_opu_collections(self, prefix, *, delimiter="\t",
 			with_spectra_names=True):
@@ -141,8 +142,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 				)
 		return
 
-
-	def plot_opu_hca(self, png, *, dpi = 300):
+	def plot_opu_hca(self, png, *, dpi=300):
 		if png is None:
 			return
 		# create figure layout
@@ -155,9 +155,9 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 
 		# plot dendrogram
 		ax = layout["dendro"]
-		self.__plot_dendrogram(ax, i2d_ratio = layout["dendro_i2d"])
-		ax.axvline(self.cutoff, linestyle = "-", linewidth = 1.0,
-			color = "#ff0000", zorder = 4)
+		self.__plot_dendrogram(ax, i2d_ratio=layout["dendro_i2d"])
+		ax.axvline(self.cutoff, linestyle="-", linewidth=1.0,
+			color="#ff0000", zorder=4)
 
 		# plot pbar
 		self.__plot_hca_cluster_bar(layout["pbar_l"])
@@ -166,37 +166,35 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		# plot group bar
 		self.__plot_hca_biosample_bar(layout["biosample_bar"])
 
-		## plot group legend
-		#plot_group_legend(layout["dendro"], group_data = group_data)
+		# plot group legend
+		# plot_group_legend(layout["dendro"], group_data = group_data)
 
 		# misc
 		figure.suptitle("OPU clustering (hierarchical)\n"
 			"metric=%s; linkage=%s; cutoff=%s; raw clusters=%u; "
-			"OPU min. size=%u"\
+			"OPU min. size=%u"
 			% (self.metric.name_str, self.linkage,
 				self.cutoff_opt.cutoff_final_str, self.n_clusters,
 				self.opu_min_size,
-			), fontsize = 16
+			), fontsize=16
 		)
 
 		# save fig and clean up
-		figure.savefig(png, dpi = dpi)
+		figure.savefig(png, dpi=dpi)
 		matplotlib.pyplot.close()
 		return
-
 
 	@property
 	def clusters_colors(self) -> util.CyclicIndexedList:
 		# get preliminary colors by internal colormaps
 		prelim = matplotlib.cm.get_cmap("Set3").colors\
 			+ matplotlib.cm.get_cmap("Set2").colors
-			#+ matplotlib.cm.get_cmap("Accent").colors[:-1]
-			#+ matplotlib.cm.get_cmap("Set3").colors\
-			#+ matplotlib.cm.get_cmap("Set2").colors\
+		# + matplotlib.cm.get_cmap("Accent").colors[:-1]
+		# + matplotlib.cm.get_cmap("Set3").colors\
+		# + matplotlib.cm.get_cmap("Set2").colors\
 		# translate to color hex colors and remove identical colors
 		colors = util.drop_replicate(map(matplotlib.colors.to_hex, prelim))
 		return util.CyclicIndexedList(colors)
-
 
 	@staticmethod
 	def __calc_linkage_matrix(hca):
@@ -209,7 +207,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 			current_count = 0
 			for child_idx in merge:
 				if child_idx < n_samples:
-					current_count += 1 # leaf node
+					current_count += 1  # leaf node
 				else:
 					current_count += counts[child_idx - n_samples]
 			counts[i] = current_count
@@ -218,7 +216,6 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 			[hca.children_, hca.distances_, counts]
 		).astype(float)
 		return linkage_matrix
-
 
 	def __optimize_cutoff(self, n_step=100) -> float:
 		# in usual cases, this should only be called by self.run_hca()
@@ -236,7 +233,6 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		)
 		return self.cutoff_opt.cutoff_final
 
-
 	def __sort_and_filter_cluster_labels(self):
 		sorted_labels = collections.Counter(self.hca_labels).most_common()
 		label_remap = dict()
@@ -249,51 +245,50 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		self._label_remap = label_remap
 		return
 
-
 	def __create_layout(self, legend_space=1.0):
 		lc = mpllayout.LayoutCreator(
-			left_margin		= 0.2,
-			right_margin	= legend_space + 0.2,
-			top_margin		= 0.7,
-			bottom_margin	= 0.5,
+			left_margin=0.2,
+			right_margin=legend_space + 0.2,
+			top_margin=0.7,
+			bottom_margin=0.5,
 		)
 
-		pbar_width			= 0.6
-		biosample_bar_width	= 0.2
-		noise_bar_width		= 0.2
-		cbar_height			= 0.4
-		heatmap_size		= 8.0
-		dendro_width		= 2.5
-		axes_gap			= 0.1
+		pbar_width = 0.6
+		biosample_bar_width = 0.2
+		noise_bar_width = 0.2
+		cbar_height = 0.4
+		heatmap_size = 8.0
+		dendro_width = 2.5
+		axes_gap = 0.1
 
 		pbar_l = lc.add_frame("pbar_l")
-		pbar_l.set_anchor("bottomleft", offsets = (0, pbar_width + axes_gap))
+		pbar_l.set_anchor("bottomleft", offsets=(0, pbar_width + axes_gap))
 		pbar_l.set_size(pbar_width, heatmap_size)
 
 		heatmap = lc.add_frame("heatmap")
-		heatmap.set_anchor("bottomleft", ref_frame = pbar_l,
-			ref_anchor = "bottomright", offsets = (axes_gap, 0))
+		heatmap.set_anchor("bottomleft", ref_frame=pbar_l,
+			ref_anchor="bottomright", offsets=(axes_gap, 0))
 		heatmap.set_size(heatmap_size, heatmap_size)
 
 		colorbar = lc.add_frame("colorbar")
-		colorbar.set_anchor("topleft", ref_frame = heatmap,
-			ref_anchor = "bottomleft", offsets = (0, -axes_gap))
+		colorbar.set_anchor("topleft", ref_frame=heatmap,
+			ref_anchor="bottomleft", offsets=(0, -axes_gap))
 		colorbar.set_size(heatmap_size, cbar_height)
 
 		pbar_r = lc.add_frame("pbar_r")
-		pbar_r.set_anchor("bottomleft", ref_frame = heatmap,
-			ref_anchor = "bottomright", offsets = (axes_gap, 0))
+		pbar_r.set_anchor("bottomleft", ref_frame=heatmap,
+			ref_anchor="bottomright", offsets=(axes_gap, 0))
 		pbar_r.set_size(pbar_width, heatmap_size)
 
 		biosample_bar = lc.add_frame("biosample_bar")
-		biosample_bar.set_anchor("bottomleft", ref_frame = pbar_r,
-			ref_anchor = "bottomright", offsets = (axes_gap / 2, 0))
+		biosample_bar.set_anchor("bottomleft", ref_frame=pbar_r,
+			ref_anchor="bottomright", offsets=(axes_gap / 2, 0))
 		biosample_bar.set_size(biosample_bar_width, heatmap_size)
 
 		dendro = lc.add_frame("dendro")
-		dendro.set_anchor("bottomleft", 
-			ref_frame = biosample_bar,
-			ref_anchor = "bottomright", offsets = (axes_gap, 0))
+		dendro.set_anchor("bottomleft",
+			ref_frame=biosample_bar,
+			ref_anchor="bottomright", offsets=(axes_gap, 0))
 		dendro.set_size(dendro_width, heatmap_size)
 
 		# create layout
@@ -330,52 +325,48 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 
 		return layout
 
-
 	def __plot_heatmap(self, heatmap_axes, colorbar_axes) -> dict:
 		# heatmap
 		ax = heatmap_axes
 		heatmap_data = self.metric.to_plot_data(self.dist_mat)
 		pcolor = ax.pcolor(heatmap_data[numpy.ix_(self.dendrogram["leaves"],
-			self.dendrogram["leaves"])], cmap = self.metric.cmap,
-			vmin = self.metric.vmin, vmax = self.metric.vmax)
+			self.dendrogram["leaves"])], cmap=self.metric.cmap,
+			vmin=self.metric.vmin, vmax=self.metric.vmax)
 		#
 		ax.set_xlim(0, self.dataset.n_spectra)
 		ax.set_ylim(0, self.dataset.n_spectra)
 
 		# colorbar
 		ax = colorbar_axes
-		cbar = colorbar_axes.figure.colorbar(pcolor, cax = ax,
-			ticklocation = "bottom", orientation = "horizontal")
+		cbar = colorbar_axes.figure.colorbar(pcolor, cax=ax,
+			ticklocation="bottom", orientation="horizontal")
 		# misc
 		cbar.outline.set_visible(False)
-		cbar.set_label(self.metric.name_str, fontsize = 14)
+		cbar.set_label(self.metric.name_str, fontsize=14)
 
-		ret = dict(heatmap = pcolor, colorbar = cbar)
+		ret = dict(heatmap=pcolor, colorbar=cbar)
 		return ret
-
 
 	def __dendro_get_adjusted_dmax(self, dmax, i2d_ratio) -> float:
 		return dmax / (1 - 1 / (2 * self.dataset.n_spectra * i2d_ratio))
 
-
 	def __plot_dendrogram(self, ax, *, i2d_ratio: float) -> list:
-		lines = list() # the return list containing all lines drawn
+		lines = list()  # the return list containing all lines drawn
 		for xys in zip(self.dendrogram["dcoord"], self.dendrogram["icoord"]):
-			line = matplotlib.lines.Line2D(*xys, linestyle = "-",
-				linewidth = 1.0, color = "#4040ff", zorder = 3)
+			line = matplotlib.lines.Line2D(*xys, linestyle="-",
+				linewidth=1.0, color="#4040ff", zorder=3)
 			ax.add_line(line)
 			lines.append(line)
 		# misc
-		ax.grid(axis = "x", linestyle = "-", linewidth = 1.0, color = "#ffffff",
-			zorder = 2)
+		ax.grid(axis="x", linestyle="-", linewidth=1.0, color="#ffffff",
+			zorder=2)
 		ax.set_xlim(0, self.__dendro_get_adjusted_dmax(
-			dmax = numpy.max(self.dendrogram["dcoord"]),
-			i2d_ratio = i2d_ratio)
+			dmax=numpy.max(self.dendrogram["dcoord"]),
+			i2d_ratio=i2d_ratio)
 		)
 		ax.set_ylim(0, 10 * self.dataset.n_spectra)
 
 		return lines
-
 
 	def __plot_hca_cluster_bar(self, ax):
 		remapped_hca_label = self.remapped_hca_label
@@ -396,17 +387,16 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		ax.set_ylim(0, self.dataset.n_spectra)
 		return
 
-
 	def __plot_hca_biosample_bar(self, ax):
 		for i, leaf in enumerate(self.dendrogram["leaves"]):
 			patch = matplotlib.patches.Rectangle((0, i), 1, 1,
-				edgecolor = "none", facecolor = self.biosample_color[leaf]
+				edgecolor="none", facecolor=self.biosample_color[leaf]
 			)
 			ax.add_patch(patch)
-		# add label
-		ax.text(0.5, 0.0, "biosample ", fontsize = 12, rotation = 90,
-			horizontalalignment = "center", verticalalignment = "top"
-		)
+			# add label
+			ax.text(0.5, 0.0, "biosample ", fontsize=12, rotation=90,
+				horizontalalignment="center", verticalalignment="top"
+			)
 
 		ax.set_xlim(0, 1)
 		ax.set_ylim(0, self.dataset.n_spectra)

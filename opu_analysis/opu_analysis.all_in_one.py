@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+
 # custom lib
 import opu_analysis_lib as oal
 
@@ -14,7 +15,7 @@ def get_args():
 	ap.add_argument("--dpi", type=oal.util.PosInt, default=300,
 		metavar="int",
 		help="dpi in plot outputs [300]")
-	
+
 	ag = ap.add_argument_group("dataset reconcile and normalize")
 	ag.add_argument("--bin-size", "-b", type=oal.util.PosFloat, default=None,
 		metavar="float",
@@ -29,18 +30,18 @@ def get_args():
 	ag.add_argument("--normalize", "-N", type=str,
 		default=oal.SpectraDataset.norm_meth.default_key,
 		choices=oal.SpectraDataset.norm_meth.list_keys(),
-		help="normalize method after loading/binning/filtering dataset [%s]" \
+		help="normalize method after loading/binning/filtering dataset [%s]"
 			% oal.SpectraDataset.norm_meth.default_key)
 
 	ag = ap.add_argument_group("HCA analysis")
 	ag.add_argument("--metric", "-m", type=str,
 		default=oal.AnalysisHCARoutine.metric_reg.default_key,
 		choices=oal.AnalysisHCARoutine.metric_reg.list_keys(),
-		help="distance metric used in HCA [%s]" \
+		help="distance metric used in HCA [%s]"
 			% oal.AnalysisHCARoutine.metric_reg.default_key)
 	ag.add_argument("--cutoff-threshold", "-t", default=0.7,
 		type=oal.AnalysisHCARoutine.cutoff_opt_reg.argparse_type,
-		metavar=("|").join(["float"] \
+		metavar=("|").join(["float"]
 			+ oal.AnalysisHCARoutine.cutoff_opt_reg.list_keys()),
 		help="OPU clustering cutoff threshold [0.7]")
 	ag.add_argument("--max-n-opus", "-M", type=oal.util.NonNegInt, default=0,
@@ -78,7 +79,7 @@ def get_args():
 	ag.add_argument("--feature-score", "-R", type=str,
 		default=oal.AnalysisFeatureScoreRoutine.score_meth.default_key,
 		choices=oal.AnalysisFeatureScoreRoutine.score_meth.list_keys(),
-		help="feature scoring method [%s]" \
+		help="feature scoring method [%s]"
 			% oal.AnalysisFeatureScoreRoutine.score_meth.default_key)
 
 	# parse and refine args

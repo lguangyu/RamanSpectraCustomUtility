@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import collections
-import numpy
+
 import matplotlib
 import matplotlib.pyplot
+import numpy
+
 # custom lib
 import mpllayout
+
 from . import util
 from .analysis_hca_routine import AnalysisHCARoutine
 
@@ -31,7 +34,7 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		opu_counts: spectra counts in each opu, as in remapped opu labels
 		"""
 		stats = collections.defaultdict(
-			lambda : dict(n_spectra=0, color=None,
+			lambda: dict(n_spectra=0, color=None,
 				opu_counts=collections.Counter())
 		)
 		# go over the each biosample and biosample_color
@@ -48,8 +51,7 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		self.biosample_opu_stats = [stats[i] for i in unique_biosample]
 		return self.biosample_opu_stats
 
-
-	def plot_opu_abundance_stackbar(self, png, *, dpi = 300):
+	def plot_opu_abundance_stackbar(self, png, *, dpi=300):
 		if not png:
 			return
 		# calculating biosample opt stats
@@ -64,7 +66,7 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		color_list = self.clusters_colors
 		handles = list()
 		bottom = numpy.zeros(n_biosample, dtype=float)
-		x = numpy.arange(n_biosample) + 0.5 # center of each bar
+		x = numpy.arange(n_biosample) + 0.5  # center of each bar
 		# plot major opus
 		ax = layout["axes"]
 		for l in self.remapped_hca_label_unique:
@@ -73,7 +75,7 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 			facecolor = "#ffffff" if l is None else color_list[l]
 			label = "other minor" if l is None else "OPU_%02u" % l
 			bar = ax.bar(x, h, width=0.8, bottom=bottom, align="center",
-				edgecolor=edgecolor, linewidth = 0.5, facecolor=facecolor,
+				edgecolor=edgecolor, linewidth=0.5, facecolor=facecolor,
 				label=label
 			)
 			bottom += h
@@ -98,13 +100,12 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		matplotlib.pyplot.close()
 		return
 
-
 	def __create_layout(self):
 		lc = mpllayout.LayoutCreator(
-			left_margin		= 0.7,
-			right_margin	= 1.5,
-			top_margin		= 0.5,
-			bottom_margin	= 2.0,
+			left_margin=0.7,
+			right_margin=1.5,
+			top_margin=0.5,
+			bottom_margin=2.0,
 		)
 
 		axes = lc.add_frame("axes")

@@ -10,7 +10,7 @@ class PosInt(int):
 	def __new__(cls, *ka, **kw):
 		new = super().__new__(cls, *ka, **kw)
 		if new <= 0:
-			raise ValueError("%s cannot be 0 or negative, got '%d'"\
+			raise ValueError("%s cannot be 0 or negative, got '%d'"
 				% (cls.__name__, new))
 		return new
 
@@ -19,7 +19,7 @@ class NonNegInt(int):
 	def __new__(cls, *ka, **kw):
 		new = super().__new__(cls, *ka, **kw)
 		if new < 0:
-			raise ValueError("%s cannot be negative, got '%d'"\
+			raise ValueError("%s cannot be negative, got '%d'"
 				% (cls.__name__, new))
 		return new
 
@@ -28,7 +28,7 @@ class PosFloat(float):
 	def __new__(cls, *ka, **kw):
 		new = super().__new__(cls, *ka, **kw)
 		if new <= 0:
-			raise ValueError("%s cannot be 0 or negative, got '%f'"\
+			raise ValueError("%s cannot be 0 or negative, got '%f'"
 				% (cls.__name__, new))
 		return new
 
@@ -37,7 +37,7 @@ class NonNegFloat(float):
 	def __new__(cls, *ka, **kw):
 		new = super().__new__(cls, *ka, **kw)
 		if new < 0:
-			raise ValueError("%s cannot be negative, got '%f'"\
+			raise ValueError("%s cannot be negative, got '%f'"
 				% (cls.__name__, new))
 		return new
 
@@ -51,7 +51,7 @@ class Fraction(float):
 		return new
 
 
-def get_fp(f, *ka, factory = open, **kw):
+def get_fp(f, *ka, factory=open, **kw):
 	"""
 	wrapper of file handle open function (default: builtin.open) to make it safe
 	to call upon already-opened file handle as the first argument;
@@ -80,6 +80,7 @@ class CyclicIndexedList(list):
 	"""
 	a list subclass that allow index values to go infinity
 	"""
+
 	def __getitem__(self, index):
 		return super().__getitem__(index % len(self))
 
@@ -93,4 +94,3 @@ def drop_replicate(seq):
 		"returns None; should this fail, place with alternative ways"
 	seen = set()
 	return [i for i in seq if not (i in seen or seen.add(i))]
-	

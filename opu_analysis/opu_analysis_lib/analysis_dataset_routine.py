@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy
+
 # custom lib
 from . import util
 from .spectra_dataset import SpectraDataset
@@ -10,6 +11,7 @@ class AnalysisDatasetRoutine(object):
 	"""
 	routines laoding dataset contig file and prepare spectra data for analysis
 	"""
+
 	def __init__(self, dataset: SpectraDataset, *ka,
 			biosample=None, biosample_color=None, **kw):
 		super().__init__(*ka, **kw)
@@ -33,6 +35,7 @@ class AnalysisDatasetRoutine(object):
 			in <dataset>
 		"""
 		return self._biosample
+
 	@biosample.setter
 	def biosample(self, value):
 		# transform scalar value here if used
@@ -59,6 +62,7 @@ class AnalysisDatasetRoutine(object):
 			in <dataset>
 		"""
 		return self._biosample_color
+
 	@biosample_color.setter
 	def biosample_color(self, value):
 		# transform scalar value here if used
@@ -84,7 +88,8 @@ class AnalysisDatasetRoutine(object):
 		color: the dataset color used in plot, default to black (optional)
 		"""
 		cfg = util.load_json(cfg_file)
-		if reconcile_param is None: reconcile_param = dict()
+		if reconcile_param is None:
+			reconcile_param = dict()
 		dataset_list = list()
 		for c in cfg:
 			if isinstance(c["file"], str):
@@ -106,7 +111,7 @@ class AnalysisDatasetRoutine(object):
 		for d in dataset_list:
 			biosample.extend([d.name] * d.n_spectra)
 		# for biosample_color, using the biosample list and the original cfg
-		biosample_color_map = {c["name"]: c.get("color", "#000000") \
+		biosample_color_map = {c["name"]: c.get("color", "#000000")
 			for c in cfg}
 		biosample_color = [biosample_color_map[k] for k in biosample]
 

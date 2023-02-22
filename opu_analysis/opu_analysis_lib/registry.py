@@ -23,7 +23,7 @@ def get(registry_name):
 class Registry(dict):
 	def __init__(self, *ka, registry_name: str, value_type=object):
 		if (not isinstance(value_type, object)):
-			raise TypeError("value_type must be a class type, not '%s'"\
+			raise TypeError("value_type must be a class type, not '%s'"
 				% type(value_type).__name__)
 		super().__init__(*ka)
 		self.registry_name = registry_name
@@ -34,6 +34,7 @@ class Registry(dict):
 	@property
 	def default_key(self):
 		return self._default_key
+
 	@default_key.setter
 	def default_key(self, key: str = None):
 		if ((key is not None) and (not isinstance(key, str))):
@@ -46,9 +47,10 @@ class Registry(dict):
 			raise ValueError("key '%s' already exists" % key)
 		if as_default or not len(self):
 			self.default_key = key
+
 		def decorator(obj):
 			if not issubclass(obj, self.value_type):
-				raise TypeError("decorated object must be subclass of '%s'"\
+				raise TypeError("decorated object must be subclass of '%s'"
 					% self.value_type.__name__)
 			self[key] = obj
 			return obj

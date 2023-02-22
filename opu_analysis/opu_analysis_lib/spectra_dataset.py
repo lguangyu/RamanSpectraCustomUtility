@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import numpy
 import typing
+
+import numpy
+
 # custom lib
-from . import util
-from . import registry
+from . import registry, util
 
 
 class SpectraDataset(object):
@@ -30,12 +31,12 @@ class SpectraDataset(object):
 		if spectra_names is None:
 			# if spectra names are not specified, deduce from dataset name
 			prefix = self.name or "unnamed_dataset"
-			spectra_names = [(prefix + "_%06u") % (i + 1) \
+			spectra_names = [(prefix + "_%06u") % (i + 1)
 				for i in range(len(intens))]
 		elif isinstance(spectra_names, str):
 			# use the spectra_names as prefix if it's str
 			prefix = spectra_names
-			spectra_names = [(prefix + "_%06u") % (i + 1) \
+			spectra_names = [(prefix + "_%06u") % (i + 1)
 				for i in range(len(intens))]
 		spectra_names = numpy.asarray(spectra_names, dtype=object)
 		# check shapes are correct and compatible
@@ -103,13 +104,13 @@ class SpectraDataset(object):
 		with util.get_fp(f, "w") as fp:
 			# header line
 			print(delimiter.join(
-				([""] if with_spectra_names else []) \
+				([""] if with_spectra_names else [])
 				+ [str(i) for i in self.wavenum]
 			), file=fp)
 			# data section
 			for name, data in zip(self.spectra_names, self.intens):
 				print(delimiter.join(
-					([name] if with_spectra_names else []) \
+					([name] if with_spectra_names else [])
 					+ [str(i) for i in data]
 				), file=fp)
 		return
@@ -130,20 +131,18 @@ class SpectraDataset(object):
 			wavenum = wavenum_bin[:-1] + bin_size / 2
 			# calculate the average for each bin window
 			bin_label = numpy.digitize(self.wavenum, wavenum_bin)
-			intens = [self._safe_ax1_mean(self.intens[:, bin_label == i]) \
+			intens = [self._safe_ax1_mean(self.intens[:, bin_label == i])
 				for i in range(1, len(wavenum_bin))]
 			intens = numpy.hstack(intens)
 		# make output
 		if inplace:
 			self.set_data(wavenum, intens, spectra_names=self.spectra_names,
-				wavenum_low=wavenum_low, wavenum_high=wavenum_high
-			)
+				wavenum_low=wavenum_low, wavenum_high=wavenum_high)
 			ret = self
 		else:
-			ret = type(self)(wavenum, intens, name = self.name,
+			ret = type(self)(wavenum, intens, name=self.name,
 				spectra_names=self.spectra_names.copy(),
-				wavenum_low=wavenum_low, wavenum_high=wavenum_high
-			)
+				wavenum_low=wavenum_low, wavenum_high=wavenum_high)
 		return ret
 
 	@staticmethod
@@ -162,14 +161,12 @@ class SpectraDataset(object):
 		if inplace:
 			self.intens = intens
 			self.set_data(self.wavenum, intens, self.spectra_names,
-				wavenum_low=self.wavenum_low, wavenum_high=self.wavenum_high
-			)
+				wavenum_low=self.wavenum_low, wavenum_high=self.wavenum_high)
 			ret = self
 		else:
 			ret = type(self)(self.wavenum.copy(), intens, name=self.name,
 				spectra_names=self.spectra_names.copy(),
-				wavenum_low=wavenum_low, wavenum_high=wavenum_high
-			)
+				wavenum_low=wavenum_low, wavenum_high=wavenum_high)
 		return ret
 
 	def is_compatible_wavenum(self, other):
@@ -197,7 +194,7 @@ class SpectraDataset(object):
 			name=name or "concatenated spctra dataset",
 			wavenum_low=min([i.wavenum_low for i in ka]),
 			wavenum_high=max([i.wavenum_high for i in ka]),
-		)
+            )
 		return new
 
 	@property

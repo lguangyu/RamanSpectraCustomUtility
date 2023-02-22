@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 import abc
+
 import numpy
+
 # custom lib
-from . import util
-from . import registry
+from . import registry, util
 
 
 class CustomRegistry(registry.Registry):
@@ -40,8 +41,8 @@ class HCACutoffOptimizer(object):
 
 
 registry.new(registry_name="hca_cutoff_optimizer",
-	reg_type = CustomRegistry,
-	value_type = HCACutoffOptimizer)
+	reg_type=CustomRegistry,
+	value_type=HCACutoffOptimizer)
 
 
 @registry.get("hca_cutoff_optimizer").register("*")
@@ -59,7 +60,7 @@ class FloatPlain(HCACutoffOptimizer):
 class AIC(HCACutoffOptimizer):
 	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis=0))
-		aic_list = [self._calc_aic(model, data, dist, i, sigma)\
+		aic_list = [self._calc_aic(model, data, dist, i, sigma)
 			for i in cutoff_list]
 		# find the cutoff with least aic
 		self.cutoff_final = cutoff_list[numpy.argmin(aic_list)]
@@ -89,7 +90,7 @@ class AIC(HCACutoffOptimizer):
 class BIC(HCACutoffOptimizer):
 	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis=0))
-		bic_list = [self._calc_bic(model, data, dist, i, sigma)\
+		bic_list = [self._calc_bic(model, data, dist, i, sigma)
 			for i in cutoff_list]
 		# find the cutoff with least bic
 		self.cutoff_final = cutoff_list[numpy.argmin(bic_list)]

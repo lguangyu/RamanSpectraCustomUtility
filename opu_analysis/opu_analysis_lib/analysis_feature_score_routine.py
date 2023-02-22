@@ -3,8 +3,10 @@
 import matplotlib
 import matplotlib.pyplot
 import numpy
+
 # custom lib
 import mpllayout
+
 from . import registry
 from .analysis_hca_routine import AnalysisHCARoutine
 
@@ -16,7 +18,6 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 	and the results become available
 	"""
 	score_meth = registry.get("feature_score")
-
 
 	def rank_features(self, method=score_meth.default_key) -> dict:
 		"""
@@ -42,11 +43,10 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		self.feature_rank_index = ret
 		return ret
 
-
 	def plot_opu_feature_score(self, png, *, dpi=300):
 		if not png:
 			return
-		
+
 		# prepare the rank matrix
 		n_wavenum = self.dataset.n_wavenum  # n_wavenum is number of features
 		plot_opu_labels = sorted(self.feature_rank_index.keys())
@@ -88,20 +88,19 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		ax.set_xlim(wavenum_low, wavenum_high)
 		ax.set_ylim(0, n_opus)
 		title = "Feature rank by %s" % self.feature_score_meth.name_str
-		ax.set_title(title, fontsize = 12)
+		ax.set_title(title, fontsize=12)
 
 		# save and clean up
-		figure.savefig(png, dpi = dpi)
+		figure.savefig(png, dpi=dpi)
 		matplotlib.pyplot.close()
 		return
 
-
 	def __create_layout(self, n_row) -> dict:
 		lc = mpllayout.LayoutCreator(
-			left_margin		= 0.2,
-			right_margin	= 1.2,
-			top_margin		= 0.5,
-			bottom_margin	= 0.4,
+			left_margin=0.2,
+			right_margin=1.2,
+			top_margin=0.5,
+			bottom_margin=0.4,
 		)
 
 		axes = lc.add_frame("axes")
