@@ -78,16 +78,16 @@ class AnalysisDatasetRoutine(object):
 		return
 
 	@classmethod
-	def load_json_config(cls, cfg_file, *, reconcile_param=None, **kw):
+	def from_config(cls, cfg: list, *, reconcile_param=None, **kw):
 		"""
-		load dataset config json file
+		prepare dataset by config
+
 		the config should be in a list structure with dictionary elements; each
 		element could have at least below key/value pairs:
 		file: the dataset file in tsv format (required)
 		name: the dataset name (optional), the file name is used if omitted
 		color: the dataset color used in plot, default to black (optional)
 		"""
-		cfg = util.load_json(cfg_file)
 		if reconcile_param is None:
 			reconcile_param = dict()
 		dataset_list = list()
@@ -118,3 +118,13 @@ class AnalysisDatasetRoutine(object):
 		new = cls(dataset, biosample=biosample, biosample_color=biosample_color,
 			**kw)
 		return new
+
+	@classmethod
+	def from_config_json(cls, cfg_file, *, reconcile_param=None, **kw):
+		"""
+		prepare dataset by config defined in json
+
+		see from_config() for details about a proper format of config
+		"""
+		cfg = util.load_json(cfg_file)
+		return cls.from_config(cfg, reconcile_param=reconcile_param, **kw)

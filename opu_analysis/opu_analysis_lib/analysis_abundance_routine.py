@@ -20,47 +20,19 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 	the results become available
 	"""
 
-	def get_biosample_opu_stats(self) -> list:
-		"""
-		biosample stats based on self.biosample, self.biosample_color, and
-		self.remapped_hca_label;
-		returns a list of dict elements each represents stats of a biosample, in
-		the same order follows the encounting order in self.biosample
-
-		stats include:
-		name: biosample name
-		n_spectra: number of spectra in that biosample
-		color: color of that biosample
-		opu_counts: spectra counts in each opu, as in remapped opu labels
-		"""
-		stats = collections.defaultdict(
-			lambda: dict(n_spectra=0, color=None,
-				opu_counts=collections.Counter())
-		)
-		# go over the each biosample and biosample_color
-		for s, c, l in zip(self.biosample, self.biosample_color,
-				self.remapped_hca_label):
-			st = stats[s]
-			st["name"] = s
-			st["n_spectra"] += 1
-			st["color"] = c
-			st["opu_counts"][l] += 1
-		# return a list with the order we want, and preserve the encounting
-		# order of each unique value
-		unique_biosample = util.drop_replicate(self.biosample)
-		self.biosample_opu_stats = [stats[i] for i in unique_biosample]
-		return self.biosample_opu_stats
-
-	def plot_opu_abundance_stackbar(self, png, *, dpi=300):
-		if not png:
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
+	def plot_opu_abundance_stackbar(self, *, plot_to="show", dpi=300):
+		if plot_to is None:
 			return
 		# calculating biosample opt stats
-		biosample_stats = self.get_biosample_opu_stats()
+		# if already done, use the old data
+		biosample_stats = self.__get_biosample_opu_stats()
 		n_biosample = len(biosample_stats)
 
 		# create layout
 		layout = self.__create_layout()
 		figure = layout["figure"]
+		figure.set_dpi(dpi)
 
 		# plot stackbars
 		color_list = self.clusters_colors
@@ -70,7 +42,7 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		# plot major opus
 		ax = layout["axes"]
 		for l in self.remapped_hca_label_unique:
-			h = [i["opu_counts"][l] / i["n_spectra"] for i in biosample_stats]
+			h = [i["opu_abunds"].get(l, 0) for i in biosample_stats]
 			edgecolor = "#404040" if l is None else "none"
 			facecolor = "#ffffff" if l is None else color_list[l]
 			label = "other minor" if l is None else "OPU_%02u" % l
@@ -96,9 +68,48 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		)
 
 		# save fig and clean up
-		figure.savefig(png, dpi=dpi)
-		matplotlib.pyplot.close()
+		if plot_to == "show":
+			matplotlib.pyplot.show()
+		else:
+			figure.savefig(plot_to)
+			matplotlib.pyplot.close()
 		return
+
+	def __get_biosample_opu_stats(self) -> list:
+		"""
+		biosample stats based on self.biosample, self.biosample_color, and
+		self.remapped_hca_label;
+		returns a list of dict elements each represents stats of a biosample, in
+		the same order follows the encounting order in self.biosample
+
+		stats include:
+		name: biosample name
+		n_spectra: number of spectra in that biosample
+		color: color of that biosample
+		opu_counts: spectra counts in each opu, as in remapped opu labels
+		"""
+		stats = collections.defaultdict(
+			lambda: dict(n_spectra=0, color=None,
+				opu_counts=collections.Counter())
+		)
+		# go over the each biosample and biosample_color
+		for s, c, l in zip(self.biosample, self.biosample_color,
+				self.remapped_hca_label):
+			st = stats[s]
+			st["name"] = s
+			st["n_spectra"] += 1
+			st["color"] = c
+			st["opu_counts"][l] += 1
+		# calculate opu abundnaces
+		for st in stats.values():
+			st["opu_abunds"] = {
+				l: c / st["n_spectra"] for l, c in st["opu_counts"].items()
+			}
+		# return a list with the order we want, and preserve the encounting
+		# order of each unique value
+		unique_biosample = util.drop_replicate(self.biosample)
+		self.biosample_opu_stats = [stats[i] for i in unique_biosample]
+		return self.biosample_opu_stats
 
 	def __create_layout(self):
 		lc = mpllayout.LayoutCreator(

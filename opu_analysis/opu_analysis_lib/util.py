@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import functools
 import io
 import json
 import sys
@@ -94,3 +95,19 @@ def drop_replicate(seq):
 		"returns None; should this fail, place with alternative ways"
 	seen = set()
 	return [i for i in seq if not (i in seen or seen.add(i))]
+
+
+def with_check_data_avail(*, check_data_attr: str, dep_method: str):
+	"""
+	returns a decorator that can help decorated function check if data is
+	available upon being called;
+	"""
+	def decorator(func):
+		@functools.wraps(func)
+		def wrapper(self, *ka, **kw):
+			if not hasattr(self, check_data_attr):
+				raise RuntimeError("method '%s' needs to be called before "
+					"calling %s" % (dep_method, wrapper.__name__))
+			return func(self, *ka, **kw)
+		return wrapper
+	return decorator

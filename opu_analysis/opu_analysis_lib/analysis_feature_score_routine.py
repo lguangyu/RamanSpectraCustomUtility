@@ -7,7 +7,7 @@ import numpy
 # custom lib
 import mpllayout
 
-from . import registry
+from . import registry, util
 from .analysis_hca_routine import AnalysisHCARoutine
 
 
@@ -19,6 +19,7 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 	"""
 	score_meth = registry.get("feature_score")
 
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def rank_features(self, method=score_meth.default_key) -> dict:
 		"""
 		rank features with label info acquired from HCA clustering
@@ -43,8 +44,10 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		self.feature_rank_index = ret
 		return ret
 
-	def plot_opu_feature_score(self, png, *, dpi=300):
-		if not png:
+	@util.with_check_data_avail(check_data_attr="feature_rank_index",
+		dep_method="rank_features")
+	def plot_opu_feature_score(self, *, plot_to="show", dpi=300):
+		if plot_to is None:
 			return
 
 		# prepare the rank matrix
@@ -58,6 +61,7 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		# create layout
 		layout = self.__create_layout(n_row=n_opus)
 		figure = layout["figure"]
+		figure.set_dpi(dpi)
 
 		# plot heatmap
 		wavenum_low = self.dataset.wavenum_low
@@ -90,9 +94,12 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		title = "Feature rank by %s" % self.feature_score_meth.name_str
 		ax.set_title(title, fontsize=12)
 
-		# save and clean up
-		figure.savefig(png, dpi=dpi)
-		matplotlib.pyplot.close()
+		# save fig and clean up
+		if plot_to == "show":
+			matplotlib.pyplot.show()
+		else:
+			figure.savefig(plot_to)
+			matplotlib.pyplot.close()
 		return
 
 	def __create_layout(self, n_row) -> dict:

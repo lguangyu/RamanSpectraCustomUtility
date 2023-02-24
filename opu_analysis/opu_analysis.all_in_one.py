@@ -92,7 +92,7 @@ def main():
 	# load dataset config as json, then read spectra data based on the config,
 	# then do preprocessing to make sure that they can be analyzed together
 	# preprocessing parameters are passed as 'reconcile_param' dict
-	opu_anal = oal.OPUAnalysis.load_json_config(args.input,
+	opu_anal = oal.OPUAnalysis.from_config_json(args.input,
 		reconcile_param=dict(
 			bin_size=args.bin_size,
 			wavenum_low=args.wavenum_low,
@@ -108,12 +108,13 @@ def main():
 	# save opu clustering data
 	opu_anal.save_opu_labels(args.opu_labels)
 	opu_anal.save_opu_collections(args.opu_collection_prefix)
-	opu_anal.plot_opu_hca(args.opu_hca_plot, dpi=args.dpi)
+	opu_anal.plot_opu_hca(plot_to=args.opu_hca_plot, dpi=args.dpi)
 	# run opu abundance analysis and plot
-	opu_anal.plot_opu_abundance_stackbar(args.abund_plot, dpi=args.dpi)
+	opu_anal.plot_opu_abundance_stackbar(plot_to=args.abund_plot, dpi=args.dpi)
 	# run feature ranking analysis
 	opu_anal.rank_features(args.feature_score)
-	opu_anal.plot_opu_feature_score(args.feature_score_plot, dpi=args.dpi)
+	opu_anal.plot_opu_feature_score(plot_to=args.feature_score_plot,
+		dpi=args.dpi)
 	return
 
 

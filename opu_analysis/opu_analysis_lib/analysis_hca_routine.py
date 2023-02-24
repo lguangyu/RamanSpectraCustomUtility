@@ -29,18 +29,22 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 	cutoff_opt_reg = registry.get("hca_cutoff_optimizer")
 
 	@property
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def cutoff(self):
 		return self.cutoff_opt.cutoff_final
 
 	@property
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def hca_labels(self) -> int:
 		return self.hca.labels_
 
 	@property
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def n_clusters(self) -> int:
 		return self.hca_labels.max() + 1
 
 	@property
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def remapped_hca_label(self) -> list:
 		"""
 		remapped_hca_label will only report clusters which have spectra
@@ -51,35 +55,13 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		return [self._label_remap.get(i, None) for i in self.hca_labels]
 
 	@property
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def remapped_hca_label_unique(self) -> list:
 		# this sort lambda ensures that None will not raise an error and
 		# is always at the end of this array
 		# None represents the opu "label" of small clusters
 		return sorted(set(self.remapped_hca_label),
 			key=lambda x: sys.maxsize if x is None else x)
-
-	def parse_and_store_opu_min_size(self, raw_value=None):
-		# convert non-real value into real
-		if raw_value is None:
-			v = int(0)
-		elif isinstance(raw_value, str):
-			v = float(raw_value)
-		else:
-			v = value
-		# parse float (fraction) into int
-		# this section contains type check as well
-		try:
-			if int(v) == v:  # int
-				ret = util.NonNegInt(v)
-			else:  # float with decimal
-				v = util.Fraction(v)
-				ret = int(numpy.math.ceil(v * self.dataset.n_spectra))
-		except ValueError:
-			raise ValueError("opu_min_size must be non-negative integer or "
-				"float between 0 and 1, got '%s'" % raw_value)
-		# record to self object
-		self.opu_min_size = ret
-		return ret
 
 	def run_hca(self, *, metric=metric_reg.default_key, cutoff=0.7,
 			linkage="average", max_n_opus=0,
@@ -90,7 +72,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		self.cutoff_pend = cutoff
 		self.linkage = linkage
 		self.max_n_opus = max_n_opus
-		self.parse_and_store_opu_min_size(opu_min_size)
+		self.__parse_and_store_opu_min_size(opu_min_size)
 		self.hca = future.sklearn_cluster_AgglomerativeClustering(
 			linkage=self.linkage, metric="precomputed",
 			# metric="precomputed" as we manually compute the distance matrix
@@ -103,9 +85,9 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		# calculate distance matrix
 		self.dist_mat = self.metric(self.dataset.intens)
 		# find the cutoff
-		self.__optimize_cutoff(n_step=100)
+		cutoff_final = self.__optimize_cutoff(n_step=100)
 		# calculate clusters, using sklearn's backend
-		self.hca.set_params(distance_threshold=self.cutoff)
+		self.hca.set_params(distance_threshold=cutoff_final)
 		self.hca.fit(self.dist_mat)
 		# calculate linkage matrix
 		self.linkage_matrix = self.__calc_linkage_matrix(self.hca)
@@ -115,9 +97,10 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 			no_plot=True
 		)
 		# sort opu labels
-		self.__sort_and_filter_cluster_labels()
+		self.__sort_and_filter_cluster_labels(self.hca.labels_)
 		return self
 
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def save_opu_labels(self, f, *, delimiter="\t"):
 		if not f:
 			return
@@ -129,6 +112,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 				print((delimiter).join([name, str(label or "-")]), file=fp)
 		return
 
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def save_opu_collections(self, prefix, *, delimiter="\t",
 			with_spectra_names=True):
 		if not prefix:
@@ -142,12 +126,14 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 				)
 		return
 
-	def plot_opu_hca(self, png, *, dpi=300):
-		if png is None:
+	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
+	def plot_opu_hca(self, *, plot_to="show", dpi=300):
+		if plot_to is None:
 			return
 		# create figure layout
 		layout = self.__create_layout()
 		figure = layout["figure"]
+		figure.set_dpi(dpi)
 
 		# plot heatmap
 		ax = layout["heatmap"]
@@ -180,8 +166,11 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		)
 
 		# save fig and clean up
-		figure.savefig(png, dpi=dpi)
-		matplotlib.pyplot.close()
+		if plot_to == "show":
+			matplotlib.pyplot.show()
+		else:
+			figure.savefig(plot_to)
+			matplotlib.pyplot.close()
 		return
 
 	@property
@@ -195,6 +184,29 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		# translate to color hex colors and remove identical colors
 		colors = util.drop_replicate(map(matplotlib.colors.to_hex, prelim))
 		return util.CyclicIndexedList(colors)
+
+	def __parse_and_store_opu_min_size(self, raw_value=None):
+		# convert non-real value into real
+		if raw_value is None:
+			v = int(0)
+		elif isinstance(raw_value, str):
+			v = float(raw_value)
+		else:
+			v = value
+		# parse float (fraction) into int
+		# this section contains type check as well
+		try:
+			if int(v) == v:  # int
+				ret = util.NonNegInt(v)
+			else:  # float with decimal
+				v = util.Fraction(v)
+				ret = int(numpy.math.ceil(v * self.dataset.n_spectra))
+		except ValueError:
+			raise ValueError("opu_min_size must be non-negative integer or "
+				"float between 0 and 1, got '%s'" % raw_value)
+		# record to self object
+		self.opu_min_size = ret
+		return ret
 
 	@staticmethod
 	def __calc_linkage_matrix(hca):
@@ -233,8 +245,8 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		)
 		return self.cutoff_opt.cutoff_final
 
-	def __sort_and_filter_cluster_labels(self):
-		sorted_labels = collections.Counter(self.hca_labels).most_common()
+	def __sort_and_filter_cluster_labels(self, hca_labels):
+		sorted_labels = collections.Counter(hca_labels).most_common()
 		label_remap = dict()
 		for i, (label, count) in enumerate(sorted_labels):
 			# check if hit the max_n_opus already, if self.max_n_opus is not 0
