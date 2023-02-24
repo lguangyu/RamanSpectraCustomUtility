@@ -46,7 +46,19 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 
 	@util.with_check_data_avail(check_data_attr="feature_rank_index",
 		dep_method="rank_features")
-	def plot_opu_feature_score(self, *, plot_to="show", dpi=300):
+	def save_opu_feature_rank_table(self, f, *, delimiter="\t"):
+		if not f:
+			return
+		with util.get_fp(f, "w") as fp:
+			for l in sorted(self.feature_rank_index.keys()):
+				rank_index = [str(self.dataset.wavenum[i])
+					for i in self.feature_rank_index[l]]
+				print(delimiter.join(["OPU_%02u" % l] + rank_index), file=fp)
+		return
+
+	@util.with_check_data_avail(check_data_attr="feature_rank_index",
+		dep_method="rank_features")
+	def plot_opu_feature_rank(self, *, plot_to="show", dpi=300):
 		if plot_to is None:
 			return
 

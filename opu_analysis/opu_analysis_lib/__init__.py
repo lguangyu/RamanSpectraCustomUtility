@@ -8,6 +8,7 @@ from . import registry
 from . import cluster_metric
 from . import hca_cutoff_optimizer
 from . import normalize
+from . import dim_red_visualize
 from . import feature_score
 
 # i/o libraries

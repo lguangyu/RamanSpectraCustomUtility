@@ -48,7 +48,14 @@ class AnalysisDatasetRoutine(object):
 			raise ValueError("biosample must be None, str, or list with a "
 				"length of dataset.n_spectra")
 		self._biosample = value
+		# also update the unique biosample name to ensure that all subclasses
+		# have the same biosample_unique order
+		self._biosample_unique = util.drop_replicate(self._biosample)
 		return
+
+	@property
+	def biosample_unique(self):
+		return self._biosample_unique
 
 	@property
 	def biosample_color(self):
