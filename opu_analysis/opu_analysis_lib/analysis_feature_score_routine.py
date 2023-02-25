@@ -109,10 +109,14 @@ class AnalysisFeatureScoreRoutine(AnalysisHCARoutine):
 		# save fig and clean up
 		if plot_to == "show":
 			matplotlib.pyplot.show()
+			ret = None
+		elif plot_to == "jupyter":
+			ret = figure
 		else:
 			figure.savefig(plot_to)
 			matplotlib.pyplot.close()
-		return
+			ret = None
+		return ret
 
 	def __create_layout(self, n_row) -> dict:
 		lc = mpllayout.LayoutCreator(

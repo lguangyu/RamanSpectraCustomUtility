@@ -70,10 +70,14 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		# save fig and clean up
 		if plot_to == "show":
 			matplotlib.pyplot.show()
+			ret = None
+		elif plot_to == "jupyter":
+			ret = figure
 		else:
 			figure.savefig(plot_to)
 			matplotlib.pyplot.close()
-		return
+			ret = None
+		return ret
 
 	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
 	def plot_opu_abundance_biplot(self, *, method=biplot_meth_reg.default_key,
@@ -144,10 +148,14 @@ class AnalysisAbundanceRoutine(AnalysisHCARoutine):
 		# save fig and clean up
 		if plot_to == "show":
 			matplotlib.pyplot.show()
+			ret = None
+		elif plot_to == "jupyter":
+			ret = figure
 		else:
 			figure.savefig(plot_to)
 			matplotlib.pyplot.close()
-		return
+			ret = None
+		return ret
 
 	def __get_biosample_opu_stats(self) -> list:
 		"""

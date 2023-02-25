@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 # custom lib
 import opu_analysis_lib as oal
@@ -95,6 +96,8 @@ def get_args():
 
 	# parse and refine args
 	args = ap.parse_args()
+	if args.input == "-":
+		args.input = sys.stdin
 	return args
 
 

@@ -168,10 +168,14 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		# save fig and clean up
 		if plot_to == "show":
 			matplotlib.pyplot.show()
+			ret = None
+		if plot_to == "jupyter":
+			ret = figure
 		else:
 			figure.savefig(plot_to)
 			matplotlib.pyplot.close()
-		return
+			ret = None
+		return ret
 
 	@property
 	def clusters_colors(self) -> util.CyclicIndexedList:
@@ -192,7 +196,7 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 		elif isinstance(raw_value, str):
 			v = float(raw_value)
 		else:
-			v = value
+			v = raw_value
 		# parse float (fraction) into int
 		# this section contains type check as well
 		try:
