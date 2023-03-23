@@ -187,7 +187,9 @@ class SpectraDataset(object):
 		for i in ka:
 			if not ref.is_compatible_wavenum(i):
 				raise ValueError("incompatible wavenum found betweet dataset "
-					"'%s' and '%s'" % (ref.name, i.name))
+					"'%s' and '%s', run bin_and_filter_wavenum() with bin_size "
+					"defined before concatenate can usually avoid this error"
+					% (ref.name, i.name))
 		concat_intens = numpy.vstack([i.intens for i in ka])
 		new = cls(ref.wavenum.copy(), concat_intens,
 			spectra_names=numpy.concatenate([i.spectra_names for i in ka]),
@@ -215,3 +217,45 @@ class SpectraDataset(object):
 		ret = type(self)(self.wavenum.copy(), intens,
 			spectra_names=spectra_names, name=self.name)
 		return ret
+
+	@classmethod
+	def from_labspec_txt_dump(cls, f, *, delimiter="\t", spectrum_name=None,
+			bin_size=None, wavenum_low=400.0, wavenum_high=1800.0,
+			normalize=norm_meth.default_key):
+		"""
+		read from the .txt dump format from LabSpec; the format should contain
+		only one spectrum per file, in a 2-column tab-delimited format, with
+		wavenumbers in the first column and intensities in the second column;
+
+		calling this method will read a LabSpec txt dump file and return a
+		single-spectrum dataset;
+
+		ARGUMENTS
+		---------
+		f: file to read, can be already opened file handle or str as file name
+		delimiter: delimiter character in the input file, default is <tab>;
+			usually this is not the subject to change
+		spectrum_name: the name of the spectrum, if not provided, the file path
+			(including directory) will be used
+		bin_size: window size used in binning, default is not perform binning;
+			however, binning may be required to reconcile when join multiple
+			spectra unless they have exactly the same wavenumbers
+		wavenum_low: the lower wavenumber boundary to extract data
+		wavenum_high: the upper wavenumber boundary to extract data
+		normalize: if and what normalization should be performed
+		"""
+		# read data from the text dump
+		# use get_fp here is to ensure we can get the file name within the next
+		# few lines without another if statement
+		with util.get_fp(f, "r") as fp:
+			# labspec txt dump contains only 1 spec per file
+			if spectrum_name is None:
+				spectrum_name = fp.name
+			wavenum, intens = numpy.loadtxt(fp, dtype=float,
+				delimiter=delimiter, unpack=True)
+		new = cls(wavenum, intens.reshape(1, -1), spectra_names=[spectrum_name],
+			name=spectrum_name)
+		new.bin_and_filter_wavenum(bin_size=bin_size, wavenum_low=wavenum_low,
+			wavenum_high=wavenum_high, inplace=True)
+		new.normalize(normalize, inplace=True)
+		return new
