@@ -61,44 +61,60 @@ class SpectraDataset(object):
 
 	@classmethod
 	def from_file(cls, f: str, *, delimiter="\t", name=None,
-			with_spectra_names=False, spectra_names_override=None,
-			bin_size=None, wavenum_low=400.0, wavenum_high=1800.0,
-			normalize=norm_meth.default_key):
+			with_spectra_names=None, bin_size=None, wavenum_low=400.0,
+			wavenum_high=1800.0, normalize=norm_meth.default_key):
 		"""
 		read spectra dataset form text file in tabular format
 		the read table must have the first line as the wave number (wavnum)
 		information; the spectra names are optionl, but they must be available
 		in the first column if used
 
-		with_sepctra_name: set True if the file contains spactra names
-		spectra_names_override: behavior depends on <with_spectra_names> and the
-			value of itself; specifically:
-			* when <spectra_names_override> is set, it's values will be used to
-				determine the spectra names no matter what <with_spectra_names>
-				is.
-			* when <spectra_names_override> is not set (None), try read from
-				file if <with_spectra_names> is True, otherwise deduct from the
-				file name.
-			* if <spectra_names_override> is a list, it must be of the same rows
-				as the intens data, representing each spectrum's name
-			* if <spectra_names_override> is a str, it is used as the prefix
-				in deducting the spectra names; each spectra will be named after
-				the prefix followed by its ordinal number
+		with_sepctra_name: can be None, False, True, or a list of str, behaviour
+			depends:
+			False: force not parsing the first column as spectra names, and will
+				fill out spectra_names attribute by deducing from dataset name
+			True: force parsing the first column as spectra names
+			None: auto-detect if first column looks like spectra names
+			list[str]: if provided, this will override the spectra names despite
+				if the spectra names presents in the file; length of the list
+				must be the same as number of samples;
 		"""
 		raw = numpy.loadtxt(f, delimiter=delimiter, dtype=object)
 		# parse wavenum and intens from file
-		intens_start_col = 1 if with_spectra_names else 0
-		wavenum = raw[0, intens_start_col:].astype(float)
-		intens = raw[1:, intens_start_col:].astype(float)
-		# parse sample names
-		if with_spectra_names and (spectra_names_override is None):
-			spectra_names_override = raw[1:, 0]
+		if ((with_spectra_names is None) or isinstance(with_spectra_names,
+				list)):
+			# here we only need to determine if the first column looks like
+			# spectral data, since parsing it as names (str) will always succeed
+			_parse_names = cls._test_if_have_spectra_names(raw)
+		else:
+			_parse_names = with_spectra_names
+		if _parse_names:
+			wavenum = raw[0, 1:].astype(float)
+			intens = raw[1:, 1:].astype(float)
+			spectra_names = raw[1:, 0]
+		else:
+			wavenum = raw[0, 0:].astype(float)
+			intens = raw[1:, 0:].astype(float)
+			spectra_names = None
+		# determine if spectra_names will be overridden
+		if isinstance(with_spectra_names, list):
+			spectra_names = with_spectra_names
+		# create return dataset object
 		new = cls(wavenum=wavenum, intens=intens, name=name or f,
-			spectra_names=spectra_names_override)
+			spectra_names=spectra_names)
 		new.bin_and_filter_wavenum(bin_size=bin_size, wavenum_low=wavenum_low,
 			wavenum_high=wavenum_high, inplace=True)
 		new.normalize(normalize, inplace=True)
 		return new
+
+	@classmethod
+	def _test_if_have_spectra_names(cls, raw: numpy.ndarray) -> bool:
+		try:
+			t = raw[1:, 0].astype(float)
+			ret = False
+		except ValueError:
+			ret = True
+		return ret
 
 	def save_file(self, f, *, delimiter="\t", with_spectra_names=False):
 		with util.get_fp(f, "w") as fp:

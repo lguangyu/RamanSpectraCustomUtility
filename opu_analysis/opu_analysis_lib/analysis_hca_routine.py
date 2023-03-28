@@ -109,7 +109,8 @@ class AnalysisHCARoutine(AnalysisDatasetRoutine):
 				name, label = i
 				# if a label is None (when cluster size below opu_min_size),
 				# write the label as "-" instead
-				print((delimiter).join([name, str(label or "-")]), file=fp)
+				l = str("-" if label is None else label)
+				print((delimiter).join([name, str(l)]), file=fp)
 		return
 
 	@util.with_check_data_avail(check_data_attr="hca", dep_method="run_hca")
