@@ -47,7 +47,7 @@ class DimRedVisualize(sklearn.base.TransformerMixin,
 registry.new(registry_name="dim_red_visualize", value_type=DimRedVisualize)
 
 
-@registry.get("dim_red_visualize").register("pca")
+@(registry.get("dim_red_visualize")).register("pca")
 class PCA(DimRedVisualize, sklearn.decomposition.PCA):
 	@functools.wraps(sklearn.decomposition.PCA.__init__)
 	def __init__(self, *, n_components=2, **kw):

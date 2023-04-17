@@ -22,7 +22,7 @@ class NormMethod(object):
 registry.new(registry_name="normalize", value_type=NormMethod)
 
 
-@registry.get("normalize").register("none", as_default=True)
+@(registry.get("normalize")).register("none", as_default=True)
 class NormMeth_None(NormMethod):
 	def __call__(self, X):
 		return X
@@ -32,7 +32,7 @@ class NormMeth_None(NormMethod):
 		return "none"
 
 
-@registry.get("normalize").register("l1")
+@(registry.get("normalize")).register("l1")
 class NormMeth_L1(NormMethod):
 	def __call__(self, X):
 		norm = numpy.linalg.norm(X, ord=1, axis=1, keepdims=True)
@@ -43,7 +43,7 @@ class NormMeth_L1(NormMethod):
 		return "l1"
 
 
-@registry.get("normalize").register("l2")
+@(registry.get("normalize")).register("l2")
 class NormMeth_L2(NormMethod):
 	def __call__(self, X):
 		norm = numpy.linalg.norm(X, ord=2, axis=1, keepdims=True)
@@ -54,7 +54,7 @@ class NormMeth_L2(NormMethod):
 		return "l2"
 
 
-@registry.get("normalize").register("minmax")
+@(registry.get("normalize")).register("minmax")
 class NormMeth_Mixmax(NormMethod):
 	def __call__(self, X):
 		mins = X.min(axis=1, keepdims=True)

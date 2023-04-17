@@ -39,7 +39,7 @@ class ClusterMetric(abc.ABC):
 registry.new(registry_name="cluster_metric", value_type=ClusterMetric)
 
 
-@registry.get("cluster_metric").register("euclidean")
+@(registry.get("cluster_metric")).register("euclidean")
 class EuclideanDist(ClusterMetric):
 	@functools.wraps(sklearn.metrics.pairwise.euclidean_distances)
 	def __call__(self, *ka, **kw):
@@ -50,7 +50,7 @@ class EuclideanDist(ClusterMetric):
 		return "Euclidean distance"
 
 
-@registry.get("cluster_metric").register("cosine", as_default=True)
+@(registry.get("cluster_metric")).register("cosine", as_default=True)
 class CosineDist(ClusterMetric):
 	@functools.wraps(sklearn.metrics.pairwise.cosine_distances)
 	def __call__(self, *ka, **kw):
@@ -76,7 +76,7 @@ class CosineDist(ClusterMetric):
 		return "RdYlBu_r"
 
 
-@registry.get("cluster_metric").register("sqrt_cosine")
+@(registry.get("cluster_metric")).register("sqrt_cosine")
 class SqrtCosineDist(ClusterMetric):
 	@functools.wraps(sklearn.metrics.pairwise.cosine_distances)
 	def __call__(self, *ka, **kw):

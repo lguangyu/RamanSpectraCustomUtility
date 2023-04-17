@@ -27,7 +27,7 @@ class FeatureScoreMethod(abc.ABC):
 registry.new(registry_name="feature_score", value_type=FeatureScoreMethod)
 
 
-@registry.get("feature_score").register("fisher_score")
+@(registry.get("feature_score")).register("fisher_score")
 class FisherScore(FeatureScoreMethod):
 	def feature_score(self, X, Y):
 		return fisher_score(X, Y, mode="index")
@@ -37,7 +37,7 @@ class FisherScore(FeatureScoreMethod):
 		return "Fisher score"
 
 
-@registry.get("feature_score").register("lap_score", as_default=True)
+@(registry.get("feature_score")).register("lap_score", as_default=True)
 class LaplacianScore(FeatureScoreMethod):
 	def feature_score(self, X, Y):
 		return lap_score(X, Y, mode="index")
@@ -47,7 +47,7 @@ class LaplacianScore(FeatureScoreMethod):
 		return "Laplacian score"
 
 
-@registry.get("feature_score").register("trace_ratio")
+@(registry.get("feature_score")).register("trace_ratio")
 class TraceRatio(FeatureScoreMethod):
 	def feature_score(self, X, Y):
 		return trace_ratio(X, Y, mode="index")

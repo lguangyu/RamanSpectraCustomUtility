@@ -45,7 +45,7 @@ registry.new(registry_name="hca_cutoff_optimizer",
 	value_type=HCACutoffOptimizer)
 
 
-@registry.get("hca_cutoff_optimizer").register("*")
+@(registry.get("hca_cutoff_optimizer")).register("*")
 class FloatPlain(HCACutoffOptimizer):
 	def optimize(self, *, cutoff_pend, **kw):
 		self.cutoff_final = cutoff_pend
@@ -56,7 +56,7 @@ class FloatPlain(HCACutoffOptimizer):
 		return "%.2f" % self.cutoff_final
 
 
-@registry.get("hca_cutoff_optimizer").register("aic")
+@(registry.get("hca_cutoff_optimizer")).register("aic")
 class AIC(HCACutoffOptimizer):
 	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis=0))
@@ -86,7 +86,7 @@ class AIC(HCACutoffOptimizer):
 		return "%.2f(AIC)" % self.cutoff_final
 
 
-@registry.get("hca_cutoff_optimizer").register("bic")
+@(registry.get("hca_cutoff_optimizer")).register("bic")
 class BIC(HCACutoffOptimizer):
 	def optimize(self, *, model, data, dist, cutoff_list, **kw):
 		sigma = numpy.median(data.std(axis=0))
