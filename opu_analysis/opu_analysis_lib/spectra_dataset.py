@@ -69,7 +69,7 @@ class SpectraDataset(object):
 		information; the spectra names are optionl, but they must be available
 		in the first column if used
 
-		with_sepctra_name: can be None, False, True, or a list of str, behaviour
+		with_sepctra_names: can be None, False, True, or a list of str, behaviour
 			depends:
 			False: force not parsing the first column as spectra names, and will
 				fill out spectra_names attribute by deducing from dataset name
