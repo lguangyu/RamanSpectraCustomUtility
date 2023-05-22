@@ -1,3 +1,6 @@
-[submodule "mpllayout"]
-	path = mpllayout
-	url = https://github.com/lguangyu/MatplotlibLayout.git
+[submodule "kdiv_sampling_size"]
+	path = kdiv_sampling_size
+	url = https://github.com/lguangyu/RamanSpecSamplingSizeAnalysis.git
+[submodule "opu_analysis"]
+	path = opu_analysis
+	url = https://github.com/lguangyu/RamanSpecOPUAnalysis.git
